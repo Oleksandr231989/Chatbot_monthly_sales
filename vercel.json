@@ -1,12 +1,5 @@
 {
   "functions": {
-    "api/chat.py": {
-      "runtime": "python3.9"
-    }
-  },
-  "build": {
-    "env": {
-      "PYTHONPATH": "$PYTHONPATH:/var/task"
-    }
+    "api/chat.py": {}
   }
 }
