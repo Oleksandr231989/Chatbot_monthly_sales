@@ -65,6 +65,28 @@ class ChatGPTQueryProcessor:
         self.data_manager = data_manager
         self.schema_info = data_manager.get_schema_info()
 
+    def detect_language(self, question):
+        """Enhanced language detection"""
+        question_lower = question.lower()
+        
+        # English indicators
+        english_words = ['what', 'are', 'the', 'how', 'show', 'sales', 'market', 'share', 'trends', 'analysis', 'growth', 'top', 'brands']
+        # Spanish indicators  
+        spanish_words = ['cuáles', 'son', 'las', 'ventas', 'qué', 'cómo', 'mercado', 'análisis', 'cuál', 'es', 'el']
+        # French indicators
+        french_words = ['quelles', 'sont', 'les', 'ventes', 'quel', 'est', 'marché', 'analyse', 'comment', 'quels']
+        
+        english_count = sum(1 for word in english_words if word in question_lower)
+        spanish_count = sum(1 for word in spanish_words if word in question_lower)
+        french_count = sum(1 for word in french_words if word in question_lower)
+        
+        if spanish_count > english_count and spanish_count > french_count:
+            return 'spanish'
+        elif french_count > english_count and french_count > spanish_count:
+            return 'french'
+        else:
+            return 'english'  # Default to English
+
     def create_system_prompt(self):
         return """
 You are a specialized SQL query generator for pharmaceutical sales data analysis with TREND ANALYSIS capabilities.
@@ -215,6 +237,9 @@ Return ONLY the SQL query with trend analysis, no explanations or markdown forma
         Multi-language support with factual analysis
         """
         try:
+            # Detect the language of the user's question
+            detected_language = self.detect_language(user_question)
+            
             if query_results is not None and not query_results.empty:
                 results_text = query_results.to_string(index=False, max_rows=20)
                 results_summary = f"Query returned {len(query_results)} rows"
@@ -263,50 +288,80 @@ Return ONLY the SQL query with trend analysis, no explanations or markdown forma
             else:
                 response_type = "GENERIC"
 
+            # Language-specific response prompts
+            language_prompts = {
+                'english': {
+                    'analysis_header': f"📊 {brand_mentioned or 'DATA'} ANALYSIS{' - ' + country_mentioned.upper() if country_mentioned else ''}",
+                    'separator': "═══════════════════════════════════════",
+                    'current_performance': "Current Performance:",
+                    'growth_comparison': "Growth Comparison:",
+                    'key_insights': "🔍 KEY INSIGHTS:",
+                    'data_observations': "• Data Observations: The data shows",
+                    'comparative_analysis': "• Comparative Analysis: Mathematical comparison reveals",
+                    'quantitative_trends': "• Quantitative Trends: Numerical analysis indicates",
+                    'measurable_changes': "• Measurable Changes: Specific changes include"
+                },
+                'spanish': {
+                    'analysis_header': f"📊 ANÁLISIS DE {brand_mentioned or 'DATOS'}{' - ' + country_mentioned.upper() if country_mentioned else ''}",
+                    'separator': "═══════════════════════════════════════",
+                    'current_performance': "Rendimiento Actual:",
+                    'growth_comparison': "Comparación de Crecimiento:",
+                    'key_insights': "🔍 INSIGHTS CLAVE:",
+                    'data_observations': "• Observaciones de Datos: Los datos muestran",
+                    'comparative_analysis': "• Análisis Comparativo: La comparación matemática revela",
+                    'quantitative_trends': "• Tendencias Cuantitativas: El análisis numérico indica",
+                    'measurable_changes': "• Cambios Medibles: Los cambios específicos incluyen"
+                },
+                'french': {
+                    'analysis_header': f"📊 ANALYSE DE {brand_mentioned or 'DONNÉES'}{' - ' + country_mentioned.upper() if country_mentioned else ''}",
+                    'separator': "═══════════════════════════════════════",
+                    'current_performance': "Performance Actuelle:",
+                    'growth_comparison': "Comparaison de Croissance:",
+                    'key_insights': "🔍 INSIGHTS CLÉS:",
+                    'data_observations': "• Observations des Données: Les données montrent",
+                    'comparative_analysis': "• Analyse Comparative: La comparaison mathématique révèle",
+                    'quantitative_trends': "• Tendances Quantitatives: L'analyse numérique indique",
+                    'measurable_changes': "• Changements Mesurables: Les changements spécifiques incluent"
+                }
+            }
+
+            lang_prompt = language_prompts.get(detected_language, language_prompts['english'])
+
             response_prompt = f"""
 You are a pharmaceutical data analyst providing FACTUAL analysis based only on database results.
 
+DETECTED LANGUAGE: {detected_language.upper()}
 ANALYSIS TYPE: {response_type}
 USER QUESTION: {user_question}
 ENTITIES IDENTIFIED: Brand: {brand_mentioned}, Country: {country_mentioned}, Market: {market_mentioned}, Company: {company_mentioned}
 QUERY RESULTS: {results_text}
 
 CRITICAL REQUIREMENTS:
-1. Use ONLY factual data from the database results
-2. DO NOT speculate about marketing campaigns, customer acquisition, or external factors
-3. DO NOT mention causes you cannot verify from the data
-4. Stick to mathematical comparisons and observable data trends
-5. Use ONLY the data provided - no assumptions or industry knowledge
-6. RESPOND IN THE SAME LANGUAGE AS THE USER'S QUESTION (MOST IMPORTANT)
+1. RESPOND ONLY IN {detected_language.upper()} - DO NOT MIX LANGUAGES
+2. Use ONLY factual data from the database results
+3. DO NOT speculate about marketing campaigns, customer acquisition, or external factors
+4. DO NOT mention causes you cannot verify from the data
+5. Stick to mathematical comparisons and observable data trends
+6. Use ONLY the data provided - no assumptions or industry knowledge
 
-MULTI-LANGUAGE SUPPORT:
-- If user asks in English, respond in English
-- If user asks in Spanish (¿Cuáles son...?, ¿Qué...?, etc.), respond in Spanish
-- If user asks in French (Quelles sont...?, Quel est...?, etc.), respond in French
-- If user asks in German (Wie hoch sind...?, Was sind...?, etc.), respond in German
-- If user asks in Portuguese (Quais são...?, Qual é...?, etc.), respond in Portuguese
-- If user asks in Italian (Quali sono...?, Qual è...?, etc.), respond in Italian
-- Detect the language from the question and match it exactly
-
-RESPONSE STRUCTURE:
+RESPONSE STRUCTURE (in {detected_language.upper()}):
 ```
-📊 {brand_mentioned or 'DATA'} ANALYSIS{' - ' + country_mentioned.upper() if country_mentioned else ''}
-═══════════════════════════════════════
-Current Performance: [State exact figures from database]
-Growth Comparison: [Mathematical comparison with previous periods from data]
+{lang_prompt['analysis_header']}
+{lang_prompt['separator']}
+{lang_prompt['current_performance']} [State exact figures from database]
+{lang_prompt['growth_comparison']} [Mathematical comparison with previous periods from data]
 
-🔍 KEY INSIGHTS:
-• Data Observations: [What the numbers show without speculation]
-• Comparative Analysis: [How metrics compare to previous periods based on data]
-• Quantitative Trends: [Mathematical trends visible in the data]
-• Measurable Changes: [Specific percentage changes and numerical differences]
+{lang_prompt['key_insights']}
+{lang_prompt['data_observations']} [What the numbers show without speculation]
+{lang_prompt['comparative_analysis']} [How metrics compare to previous periods based on data]
+{lang_prompt['quantitative_trends']} [Mathematical trends visible in the data]
+{lang_prompt['measurable_changes']} [Specific percentage changes and numerical differences]
 ```
 
-FACTUAL LANGUAGE TO USE (translate to user's language):
-- "The data shows..." / "Los datos muestran..." / "Les données montrent..." / "Die Daten zeigen..." / "Os dados mostram..."
-- "According to database records..." / "Según los registros de la base de datos..." / "Selon les enregistrements de la base de données..." / "Laut Datenbankaufzeichnungen..." / "De acordo com os registros do banco de dados..."
-- "Mathematical comparison reveals..." / "La comparación matemática revela..." / "La comparaison mathématique révèle..." / "Der mathematische Vergleich zeigt..." / "A comparação matemática revela..."
-- "Numerical analysis indicates..." / "El análisis numérico indica..." / "L'analyse numérique indique..." / "Die numerische Analyse zeigt..." / "A análise numérica indica..."
+LANGUAGE-SPECIFIC PHRASES TO USE:
+- English: "The data shows...", "According to database records...", "Mathematical comparison reveals...", "Numerical analysis indicates..."
+- Spanish: "Los datos muestran...", "Según los registros de la base de datos...", "La comparación matemática revela...", "El análisis numérico indica..."
+- French: "Les données montrent...", "Selon les enregistrements de la base de données...", "La comparaison mathématique révèle...", "L'analyse numérique indique..."
 
 AVOID COMPLETELY:
 - Speculation about marketing campaigns
@@ -315,6 +370,7 @@ AVOID COMPLETELY:
 - Business strategy recommendations
 - Causal explanations without data support
 - Industry knowledge not present in results
+- MIXING LANGUAGES
 
 FOCUS ON:
 - Exact numerical values
@@ -323,13 +379,13 @@ FOCUS ON:
 - Data trends visible in numbers
 - Factual observations only
 
-Provide only data-driven insights based on the database query results in the EXACT SAME LANGUAGE as the user's question.
+Provide only data-driven insights based on the database query results in {detected_language.upper()} ONLY.
 """
 
             response = self.client.chat.completions.create(
                 model=OPENAI_MODEL,  # GPT-4o Mini: Fast & Cost-effective
                 messages=[
-                    {"role": "system", "content": f"You are a pharmaceutical data analyst. Provide ONLY factual analysis based on the database results. CRITICAL: Always respond in the same language as the user's question. If user asks in Spanish, respond in Spanish. If user asks in French, respond in French. If user asks in German, respond in German. If user asks in Portuguese, respond in Portuguese. Match the user's language exactly. Do not speculate about marketing campaigns, customer acquisition, or external factors not present in the data."},
+                    {"role": "system", "content": f"You are a pharmaceutical data analyst. CRITICAL: Respond ONLY in {detected_language.upper()}. If the user asks in English, respond ONLY in English. If the user asks in Spanish, respond ONLY in Spanish. If the user asks in French, respond ONLY in French. NEVER mix languages. Provide ONLY factual analysis based on the database results. Do not speculate about marketing campaigns, customer acquisition, or external factors not present in the data."},
                     {"role": "user", "content": response_prompt}
                 ],
                 temperature=0,  # Factual responses, no creativity
@@ -483,6 +539,7 @@ class handler(BaseHTTPRequestHandler):
 ✅ Factual-only analysis (no speculation)
 ✅ Year-over-year and month-over-month comparisons
 ✅ Market share calculations with CTEs
+✅ Enhanced language detection and consistency
 
 ⚡ PERFORMANCE:
 • Response time: ~1-2 seconds (vs 5-10s for GPT-4)
@@ -496,5 +553,6 @@ class handler(BaseHTTPRequestHandler):
 
 🌍 LANGUAGES SUPPORTED:
 • English, Spanish, French, German, Portuguese, Italian
-• Automatic language detection and matching
+• Enhanced automatic language detection and matching
+• Consistent single-language responses (no mixing)
 """
