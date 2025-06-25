@@ -92,11 +92,17 @@ EXACT COLUMN NAMES (case-sensitive):
 
 KEY BUSINESS RULES:
 1. ALWAYS use 'corp_new' instead of 'corporation_original'
-2. ALWAYS use 'brands_new' instead of 'brand_original'
+2. BRAND SEARCH PRIORITY: First search 'brands_new', if not found, search 'brand_original'
 3. 'sales_euro' is the PRIMARY metric for sales comparisons
 4. For Biocodex queries: WHERE corp_new LIKE '%biocodex%' OR corp_new LIKE '%BIOCODEX%'
 5. Brand 'Sb' is a major Biocodex brand: Use WHERE brands_new = 'Sb' (EXACT match, not LIKE)
 6. Market share = (Brand Sales / Total Market Sales) * 100
+
+BRAND SEARCH STRATEGY:
+- Primary: Search in 'brands_new' column first (consolidated brand names)
+- Secondary: If no results in 'brands_new', search in 'brand_original' column
+- Examples: 'Florastor' may appear in 'brand_original' but be consolidated as 'Sb' in 'brands_new'
+- Use exact matches for specific brand names, LIKE patterns for partial searches
 
 CRITICAL TREND ANALYSIS REQUIREMENTS:
 7. DEFAULT PERIOD: If no period specified, use MAT (Moving Annual Total) - last 12 months
@@ -142,14 +148,21 @@ SPECIFIC EXAMPLES:
 
 For "Sb sales in Ukraine 2025":
 - Query 2025 data AND same months of 2024
-- Use WHERE brands_new = 'Sb' (EXACT match)
+- Use WHERE brands_new = 'Sb' (EXACT match in consolidated column)
 - Calculate 2025 vs 2024 growth rate
 
-For "Sb sales in Mexico March 2025":
-- Query March 2025 data
-- Use WHERE brands_new = 'Sb' (EXACT match)
-- Compare to February 2025 (month-over-month)
-- Compare to March 2024 (year-over-year)
+For "Florastor sales in Mexico 2025":
+- First try: WHERE brands_new = 'Florastor'
+- If no results, try: WHERE brand_original LIKE '%Florastor%'
+- Use comprehensive search: WHERE brands_new = 'Florastor' OR brand_original LIKE '%Florastor%'
+
+For "Unknown brand sales":
+- Use UNION query to search both brand columns:
+```sql
+SELECT * FROM pharma_sales WHERE brands_new LIKE '%BrandName%'
+UNION
+SELECT * FROM pharma_sales WHERE brand_original LIKE '%BrandName%'
+```
 
 For "Sb sales Q1 2025":
 - Query Jan-Mar 2025 data
@@ -165,11 +178,13 @@ CRITICAL COLUMN USAGE:
 - Use 'competitive_market' NOT 'Competitive market'
 
 SAMPLE COUNTRIES: Mexico, Brazil, France, Germany, Belgium, Poland, Ukraine, Russia, Turkey, US
-SAMPLE BRANDS: Sb, OTIPAX, SAFORELLE, MUCOGYNE, HYDROMEGA, GALACTOGIL, SYMBIOSYS
+SAMPLE BRANDS: Sb, OTIPAX, SAFORELLE, MUCOGYNE, HYDROMEGA, GALACTOGIL, SYMBIOSYS, Florastor
 BRAND MATCHING RULES:
 - For exact brand names like 'Sb': Use brands_new = 'Sb' (EXACT match)
-- For partial brand searches: Use brands_new LIKE '%brand%' only when appropriate
-- Always prefer EXACT matches for specific brand names
+- For brand names like 'Florastor': May be in brand_original column, try both columns
+- Search strategy: WHERE brands_new = 'BrandName' OR brand_original LIKE '%BrandName%'
+- Always prefer EXACT matches in brands_new, then search brand_original if needed
+- Use UNION queries when searching both brand columns for comprehensive results
 SAMPLE MARKETS: Gut Microbiota Care, Ear Drops, Intimate Dryness, Immunity, Urinary
 DATA YEARS: 2023, 2024, 2025 (use for trend comparisons)
 
@@ -177,11 +192,30 @@ QUERY GENERATION RULES:
 1. Generate ONLY valid SQLite SQL queries with CTE structure for trend analysis
 2. ALWAYS include growth rate calculations when possible
 3. Use exact column names as specified above
-4. Include appropriate GROUP BY and ORDER BY clauses
-5. Use LIMIT for top/bottom queries
-6. Handle case-insensitive searches with LIKE and wildcards
-7. For market share calculations, use subqueries or CTEs
-8. MANDATORY: Include previous period comparison for context
+4. BRAND SEARCH PRIORITY: Try 'brands_new' first, then 'brand_original' if needed
+5. Use UNION queries for comprehensive brand searches when brand location uncertain
+6. Include appropriate GROUP BY and ORDER BY clauses
+7. Use LIMIT for top/bottom queries
+8. Handle case-insensitive searches with LIKE and wildcards
+9. For market share calculations, use subqueries or CTEs
+10. MANDATORY: Include previous period comparison for context
+
+COMPREHENSIVE BRAND SEARCH PATTERN:
+```sql
+WITH current_period AS (
+    SELECT SUM(sales_euro) as current_sales, SUM(sales_units) as current_units
+    FROM pharma_sales
+    WHERE (brands_new = 'BrandName' OR brand_original LIKE '%BrandName%')
+    AND [other conditions]
+),
+previous_period AS (
+    SELECT SUM(sales_euro) as previous_sales, SUM(sales_units) as previous_units
+    FROM pharma_sales
+    WHERE (brands_new = 'BrandName' OR brand_original LIKE '%BrandName%')
+    AND [previous period conditions]
+)
+SELECT ... FROM current_period cp, previous_period pp
+```
 
 Return ONLY the SQL query with trend analysis, no explanations or markdown formatting.
 """
