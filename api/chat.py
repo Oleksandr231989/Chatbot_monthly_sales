@@ -15,7 +15,7 @@ from http.server import BaseHTTPRequestHandler
 import openai
 
 # Configuration
-GOOGLE_DRIVE_FILE_ID = '1WXgnZRn2nw72xXjABCPbJjON2CUr6O6L'
+GOOGLE_DRIVE_FILE_ID = os.getenv('GOOGLE_DRIVE_FILE_ID')
 
 # MODEL SPECIFICATION: GPT-4o Mini
 # - 200x cheaper than GPT-4 (~$0.15 vs $30 per 1M tokens)
