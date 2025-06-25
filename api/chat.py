@@ -117,7 +117,7 @@ KEY BUSINESS RULES:
 2. ALWAYS use 'brands_new' instead of 'brand_original'
 3. 'sales_euro' is the PRIMARY metric for sales comparisons
 4. For Biocodex queries: WHERE corp_new LIKE '%biocodex%' OR corp_new LIKE '%BIOCODEX%'
-5. Brand 'Sb' is a major Biocodex brand
+5. Brand 'Sb' is a major Biocodex brand: Use WHERE brands_new = 'Sb' (EXACT match, not LIKE)
 6. Market share = (Brand Sales / Total Market Sales) * 100
 
 CRITICAL TREND ANALYSIS REQUIREMENTS:
@@ -171,10 +171,12 @@ SPECIFIC EXAMPLES:
 
 For "Sb sales in Ukraine 2025":
 - Query 2025 data AND same months of 2024
+- Use WHERE brands_new = 'Sb' (EXACT match)
 - Calculate 2025 vs 2024 growth rate
 
 For "Sb sales in Mexico March 2025":
 - Query March 2025 data
+- Use WHERE brands_new = 'Sb' (EXACT match)
 - Compare to February 2025 (month-over-month)
 - Compare to March 2024 (year-over-year)
 
@@ -193,6 +195,10 @@ CRITICAL COLUMN USAGE:
 
 SAMPLE COUNTRIES: Mexico, Brazil, France, Germany, Belgium, Poland, Ukraine, Russia, Turkey, US
 SAMPLE BRANDS: Sb, OTIPAX, SAFORELLE, MUCOGYNE, HYDROMEGA, GALACTOGIL, SYMBIOSYS
+BRAND MATCHING RULES:
+- For exact brand names like 'Sb': Use brands_new = 'Sb' (EXACT match)
+- For partial brand searches: Use brands_new LIKE '%brand%' only when appropriate
+- Always prefer EXACT matches for specific brand names
 SAMPLE MARKETS: Gut Microbiota Care, Ear Drops, Intimate Dryness, Immunity, Urinary
 DATA YEARS: 2023, 2024, 2025 (use for trend comparisons)
 
