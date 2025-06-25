@@ -79,20 +79,20 @@ EXACT COLUMN NAMES (case-sensitive):
 - submarket_1: TEXT - Submarket level 1 (e.g., 'Probiotic', 'Non Probiotic')
 - submarket_2: TEXT - Submarket level 2
 - corporation_original: TEXT - Original corporation name
-- brand_original: TEXT - Original brand name
+- brand: TEXT - Original brand name (NOT brand_original)
 - product: TEXT - Product/SKU name
 - sales_local_currency: REAL - Sales in local currency
 - sales_units: INTEGER - Sales units/volume
 - currency: TEXT - Local currency code
 - sales_euro: REAL - Sales converted to EUR (PRIMARY SALES METRIC)
 - corp_new: TEXT - PRIORITY: Consolidated corporation name (use this over corporation_original)
-- brands_new: TEXT - PRIORITY: Consolidated brand name (use this over brand_original)
+- brands_new: TEXT - PRIORITY: Consolidated brand name (use this over brand)
 - year: INTEGER - Year (2023, 2024, 2025)
 - month: INTEGER - Month (1-12)
 
 KEY BUSINESS RULES:
 1. ALWAYS use 'corp_new' instead of 'corporation_original'
-2. BRAND SEARCH PRIORITY: First search 'brands_new', if not found, search 'brand_original'
+2. BRAND SEARCH PRIORITY: First search 'brands_new', if not found, search 'brand'
 3. 'sales_euro' is the PRIMARY metric for sales comparisons
 4. For Biocodex queries: WHERE corp_new LIKE '%biocodex%' OR corp_new LIKE '%BIOCODEX%'
 5. Brand 'Sb' is a major Biocodex brand: Use WHERE brands_new = 'Sb' (EXACT match, not LIKE)
@@ -100,8 +100,8 @@ KEY BUSINESS RULES:
 
 BRAND SEARCH STRATEGY:
 - Primary: Search in 'brands_new' column first (consolidated brand names)
-- Secondary: If no results in 'brands_new', search in 'brand_original' column
-- Examples: 'Florastor' may appear in 'brand_original' but be consolidated as 'Sb' in 'brands_new'
+- Secondary: If no results in 'brands_new', search in 'brand' column (original brand names)
+- Examples: 'Florastor' may appear in 'brand' but be consolidated as 'Sb' in 'brands_new'
 - Use exact matches for specific brand names, LIKE patterns for partial searches
 
 CRITICAL TREND ANALYSIS REQUIREMENTS:
@@ -153,15 +153,15 @@ For "Sb sales in Ukraine 2025":
 
 For "Florastor sales in Mexico 2025":
 - First try: WHERE brands_new = 'Florastor'
-- If no results, try: WHERE brand_original LIKE '%Florastor%'
-- Use comprehensive search: WHERE brands_new = 'Florastor' OR brand_original LIKE '%Florastor%'
+- If no results, try: WHERE brand LIKE '%Florastor%'
+- Use comprehensive search: WHERE brands_new = 'Florastor' OR brand LIKE '%Florastor%'
 
 For "Unknown brand sales":
 - Use UNION query to search both brand columns:
 ```sql
 SELECT * FROM pharma_sales WHERE brands_new LIKE '%BrandName%'
 UNION
-SELECT * FROM pharma_sales WHERE brand_original LIKE '%BrandName%'
+SELECT * FROM pharma_sales WHERE brand LIKE '%BrandName%'
 ```
 
 For "Sb sales Q1 2025":
@@ -181,9 +181,9 @@ SAMPLE COUNTRIES: Mexico, Brazil, France, Germany, Belgium, Poland, Ukraine, Rus
 SAMPLE BRANDS: Sb, OTIPAX, SAFORELLE, MUCOGYNE, HYDROMEGA, GALACTOGIL, SYMBIOSYS, Florastor
 BRAND MATCHING RULES:
 - For exact brand names like 'Sb': Use brands_new = 'Sb' (EXACT match)
-- For brand names like 'Florastor': May be in brand_original column, try both columns
-- Search strategy: WHERE brands_new = 'BrandName' OR brand_original LIKE '%BrandName%'
-- Always prefer EXACT matches in brands_new, then search brand_original if needed
+- For brand names like 'Florastor': May be in brand column, try both columns
+- Search strategy: WHERE brands_new = 'BrandName' OR brand LIKE '%BrandName%'
+- Always prefer EXACT matches in brands_new, then search brand if needed
 - Use UNION queries when searching both brand columns for comprehensive results
 SAMPLE MARKETS: Gut Microbiota Care, Ear Drops, Intimate Dryness, Immunity, Urinary
 DATA YEARS: 2023, 2024, 2025 (use for trend comparisons)
@@ -205,13 +205,13 @@ COMPREHENSIVE BRAND SEARCH PATTERN:
 WITH current_period AS (
     SELECT SUM(sales_euro) as current_sales, SUM(sales_units) as current_units
     FROM pharma_sales
-    WHERE (brands_new = 'BrandName' OR brand_original LIKE '%BrandName%')
+    WHERE (brands_new = 'BrandName' OR brand LIKE '%BrandName%')
     AND [other conditions]
 ),
 previous_period AS (
     SELECT SUM(sales_euro) as previous_sales, SUM(sales_units) as previous_units
     FROM pharma_sales
-    WHERE (brands_new = 'BrandName' OR brand_original LIKE '%BrandName%')
+    WHERE (brands_new = 'BrandName' OR brand LIKE '%BrandName%')
     AND [previous period conditions]
 )
 SELECT ... FROM current_period cp, previous_period pp
