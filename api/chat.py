@@ -266,40 +266,51 @@ Return ONLY the SQL query with trend analysis, no explanations or markdown forma
                 response_type = "GENERIC"
 
             response_prompt = f"""
-You are a pharmaceutical data analyst providing SIMPLE, FACTUAL analysis based only on database results.
+You are a pharmaceutical data analyst providing FACTUAL analysis with business insights based only on database results.
 
 USER QUESTION: {user_question}
 QUERY RESULTS: {results_text}
 
 CRITICAL REQUIREMENTS:
 1. Respond in the same language as the user's question
-2. Keep responses SIMPLE and FACTUAL - just state the numbers
+2. Provide BOTH sales figures AND meaningful business insights
 3. Always provide BOTH sales in euros AND units when available
-4. ALWAYS include comparison vs same period previous year (vs PY,%)
-5. Calculate vs PY,% as: ((current sales - previous year sales) / previous year sales) * 100
-6. ALWAYS specify the exact period for which data is extracted
-7. Place "vs PY,%" immediately after each absolute value
-8. If user asks for "table" or "show table", provide data in table format
-9. Use clear, simple language
+4. ALWAYS specify the exact period for which data is extracted
+5. Explain what the figures mean in business context
+6. Provide insights based on the data patterns you observe
+7. If user asks for "table" or "show table", provide data in table format
+8. Use clear, professional language
 
-SIMPLE RESPONSE FORMAT:
+ENHANCED RESPONSE FORMAT:
 
-First, provide a descriptive introduction with the EXACT PERIOD, then show the sales results.
+First, provide a descriptive introduction with the EXACT PERIOD, then show the sales results and insights.
 
 INTRODUCTION TEMPLATE:
 "The sales of [product/brand] in [country/market] for [EXACT PERIOD] show the following results:"
 
 Then follow with:
 **Sales Results:**
-- Sales (Euros): [exact amount from data] (vs PY,% [percentage change])
-- Sales (Units): [exact amount from data] (vs PY,% [percentage change])
+- Sales (Euros): [exact amount from data]
+- Sales (Units): [exact amount from data]
+
+**Business Insights:**
+- [Explain what these figures indicate about performance]
+- [Provide context about the sales levels - are they high/low/typical?]
+- [If growth data available, explain the trend and its implications]
+- [Any notable patterns or observations from the data]
 
 EXAMPLE OUTPUT:
 "The sales of product 'Sb' in Ukraine for January-June 2025 show the following results:"
 
 **Sales Results:**
-- Sales (Euros): 2,761,788 (vs PY,% -64.6%)
-- Sales (Units): 301,955 (vs PY,% -66.3%)
+- Sales (Euros): 2,761,788
+- Sales (Units): 301,955
+
+**Business Insights:**
+- The sales performance shows a significant decline compared to the previous year, with both revenue and unit sales dropping by approximately 65%
+- This represents a substantial reduction in market penetration, suggesting either market challenges or competitive pressures
+- The unit-to-revenue ratio indicates an average price point of approximately €9.15 per unit
+- The decline pattern suggests this market may require strategic attention or revised market approach
 
 PERIOD SPECIFICATION EXAMPLES:
 - "for 2025" (full year)
@@ -312,16 +323,23 @@ PERIOD SPECIFICATION EXAMPLES:
 KEY ELEMENTS:
 1. Always mention: product name in quotes, country/market, and EXACT time period
 2. Natural transition: Use "show the following results" to bridge to the data
-3. MANDATORY: Always include vs PY,% comparison immediately after each value
-4. Format percentage with one decimal place and + or - sign
-5. Be specific about the period (avoid vague terms like "current period")
+3. MANDATORY: Always include business insights that explain what the numbers mean
+4. Provide context about performance levels and trends
+5. Calculate and mention relevant ratios or per-unit metrics when helpful
 6. Respond in the same language as the user's question automatically
 
-If user requests table format, present data as a simple table with vs PY,% column.
+INSIGHT GUIDELINES:
+- Focus on what the data tells us about business performance
+- Explain trends and their potential implications
+- Provide context about market performance
+- Mention any notable patterns or anomalies
+- Suggest what the figures might indicate for business strategy (when clear from data)
 
-ALWAYS include previous year comparison and specify exact period. No exceptions.
+If user requests table format, present data as a simple table and still provide insights.
 
-Provide only factual numbers in the same language as the user's question.
+ALWAYS include meaningful business insights. No exceptions.
+
+Provide factual numbers and professional business analysis in the same language as the user's question.
 """
 
             response = self.client.chat.completions.create(
@@ -447,6 +465,9 @@ class handler(BaseHTTPRequestHandler):
     def download_database(self):
         """Download SQLite database from Google Drive"""
         try:
+            if not GOOGLE_DRIVE_FILE_ID:
+                raise Exception("GOOGLE_DRIVE_FILE_ID environment variable not set")
+                
             url = f"https://drive.google.com/uc?export=download&id={GOOGLE_DRIVE_FILE_ID}"
             response = requests.get(url, timeout=30)
             response.raise_for_status()
