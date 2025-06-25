@@ -339,40 +339,52 @@ Return ONLY the SQL query with trend analysis, no explanations or markdown forma
             response_prompt = f"""
 You are a pharmaceutical data analyst providing SIMPLE, FACTUAL analysis based only on database results.
 
-DETECTED LANGUAGE: {detected_language.upper()}
 USER QUESTION: {user_question}
 QUERY RESULTS: {results_text}
 
 CRITICAL REQUIREMENTS:
-1. RESPOND ONLY IN {detected_language.upper()} - DO NOT MIX LANGUAGES
+1. Respond in the same language as the user's question
 2. Keep responses SIMPLE and FACTUAL - just state the numbers
 3. Always provide BOTH sales in euros AND units when available
 4. DO NOT calculate or mention growth vs previous period unless specifically requested
 5. If user asks for "table" or "show table", provide data in table format
 6. Use clear, simple language
 
-SIMPLE RESPONSE FORMAT (in {detected_language.upper()}):
+SIMPLE RESPONSE FORMAT:
 
+First, provide a descriptive introduction based on the query, then show the sales results.
+
+INTRODUCTION TEMPLATE:
+"The sales of [product/brand] in [country/market] for [period] show the following results:"
+
+Then follow with:
 **Sales Results:**
 - Sales (Euros): [exact amount from data]
 - Sales (Units): [exact amount from data]
+
+EXAMPLE OUTPUT:
+"The sales of product 'Sb' in Ukraine for 2025 show the following results:"
+
+**Sales Results:**
+- Sales (Euros): 2,761,788
+- Sales (Units): 301,955
+
+KEY ELEMENTS:
+1. Always mention: product name in quotes, country/market, and time period
+2. Natural transition: Use "show the following results" to bridge to the data
+3. Respond in the same language as the user's question automatically
 
 If user requests table format, present data as a simple table.
 
 Keep it simple, factual, and direct. No growth calculations unless requested.
 
-LANGUAGE-SPECIFIC PHRASES:
-- English: "Sales results show...", "The data indicates...", "Total sales:"
-- Spanish: "Los resultados de ventas muestran...", "Los datos indican...", "Ventas totales:"
-- French: "Les résultats des ventes montrent...", "Les données indiquent...", "Ventes totales:"
-
-Provide only factual numbers in {detected_language.upper()}.
+Provide only factual numbers in the same language as the user's question.
 """
 
             response = self.client.chat.completions.create(
                 model=OPENAI_MODEL,  # GPT-4o Mini: Fast & Cost-effective
                 messages=[
-                    {"role": "system", "content": f"You are a pharmaceutical data analyst. CRITICAL: Respond ONLY in {detected_language.upper()}. If the user asks in English, respond ONLY in English. If the user asks in Spanish, respond ONLY in Spanish. If the user asks in French, respond ONLY in French. NEVER mix languages. Provide ONLY factual analysis based on the database results. Do not speculate about marketing campaigns, customer acquisition, or external factors not present in the data."},
+                    {"role": "system", "content": f"You are a pharmaceutical data analyst. Respond in the same language as the user's question. Provide ONLY factual analysis based on the database results. Do not speculate about marketing campaigns, customer acquisition, or external factors not present in the data."},
                     {"role": "user", "content": response_prompt}
                 ],
                 temperature=0.2,  # 20% temperature for more factual responses
