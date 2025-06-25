@@ -8,16 +8,17 @@ body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     min-height: 100vh;
-    padding: 20px;
+    padding: 15px; /* Reduced padding for more space */
 }
 
 .container {
-    max-width: 900px;
+    max-width: 1200px; /* Increased from 900px */
     margin: 0 auto;
     background: white;
     border-radius: 20px;
     box-shadow: 0 20px 40px rgba(0,0,0,0.1);
     overflow: hidden;
+    min-height: calc(100vh - 30px); /* Extended height */
 }
 
 header {
@@ -38,7 +39,7 @@ header p {
 }
 
 .api-setup {
-    padding: 30px;
+    padding: 40px; /* Increased padding */
     text-align: center;
     background: #f8f9fa;
 }
@@ -51,7 +52,7 @@ header p {
 .input-container {
     display: flex;
     gap: 10px;
-    max-width: 500px;
+    max-width: 600px; /* Increased width */
     margin: 0 auto 15px;
 }
 
@@ -99,7 +100,7 @@ header p {
 
 .sample-questions {
     background: #f8f9fa;
-    padding: 20px;
+    padding: 30px; /* Increased padding */
     border-bottom: 1px solid #e9ecef;
 }
 
@@ -108,15 +109,22 @@ header p {
     color: #2c3e50;
 }
 
+.question-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); /* More responsive grid */
+    gap: 15px;
+    max-width: 1000px; /* Increased max width */
+    margin: 0 auto;
+}
+
 .sample-btn {
-    padding: 10px 16px;
+    padding: 12px 18px; /* Slightly larger buttons */
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
     border: none;
     border-radius: 8px;
     cursor: pointer;
     font-size: 0.9em;
-    margin: 5px;
     transition: transform 0.2s;
 }
 
@@ -125,7 +133,7 @@ header p {
 }
 
 .chat-container {
-    height: 400px;
+    height: 500px; /* Increased from 400px */
     display: flex;
     flex-direction: column;
 }
@@ -133,21 +141,24 @@ header p {
 .chat-messages {
     flex: 1;
     overflow-y: auto;
-    padding: 20px;
+    padding: 30px; /* Increased padding */
     background: #f8f9fa;
+    max-width: 100%;
 }
 
 .message {
-    margin-bottom: 20px;
+    margin-bottom: 25px; /* Increased spacing */
     display: flex;
     align-items: flex-start;
 }
 
 .message-content {
-    max-width: 85%;
-    padding: 15px 20px;
+    max-width: 90%; /* Increased from 85% */
+    padding: 20px 25px; /* Increased padding */
     border-radius: 20px;
     box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    word-wrap: break-word;
+    overflow-wrap: break-word;
 }
 
 .user-message {
@@ -170,16 +181,18 @@ header p {
     background: #f8f9fa;
     border: 1px solid #dee2e6;
     border-radius: 8px;
-    padding: 12px;
+    padding: 15px; /* Increased padding */
     margin: 15px 0;
     font-family: 'Courier New', monospace;
     font-size: 0.85em;
     color: #495057;
+    overflow-x: auto;
+    white-space: pre-wrap;
 }
 
 .loading {
     text-align: center;
-    padding: 20px;
+    padding: 30px; /* Increased padding */
     background: white;
 }
 
@@ -207,10 +220,36 @@ header p {
     border: 1px solid #f5c6cb;
 }
 
+/* Data table styling */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 15px 0;
+    font-size: 12px;
+    background: white;
+}
+
+table th,
+table td {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: left;
+}
+
+table th {
+    background: #f5f5f5;
+    font-weight: 600;
+}
+
 @media (max-width: 768px) {
+    body {
+        padding: 10px;
+    }
+    
     .container {
-        margin: 10px;
+        margin: 0;
         border-radius: 15px;
+        min-height: calc(100vh - 20px);
     }
     
     header {
@@ -223,5 +262,21 @@ header p {
     
     .input-container {
         flex-direction: column;
+        max-width: 100%;
+    }
+    
+    .api-setup,
+    .sample-questions,
+    .chat-messages {
+        padding: 20px;
+    }
+    
+    .question-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .message-content {
+        max-width: 95%;
+        padding: 15px 20px;
     }
 }
