@@ -182,21 +182,30 @@ SPECIFIC EXAMPLES:
 
 For "Sb market share in Ukraine 2025":
 - Calculate: (Sb sales in Ukraine 2025) / (Total competitive_market sales in Ukraine 2025) * 100
-- First get Sb's competitive_market, then calculate total for that market
+- CRITICAL: Use parentheses around OR condition
 - Query structure:
 ```sql
 WITH sb_sales AS (
-    SELECT SUM(sales_euro) as brand_sales, competitive_market
+    SELECT 
+        SUM(sales_euro) as brand_sales, 
+        competitive_market
     FROM pharma_sales
-    WHERE (brands_new = 'Sb' OR brand = 'Sb') AND country = 'Ukraine' AND year = 2025
+    WHERE (brands_new = 'Sb' OR brand = 'Sb') 
+    AND country = 'Ukraine' 
+    AND year = 2025
 ),
 total_market AS (
     SELECT SUM(sales_euro) as total_sales
     FROM pharma_sales
-    WHERE competitive_market = (SELECT competitive_market FROM sb_sales)
-    AND country = 'Ukraine' AND year = 2025
+    WHERE competitive_market = (SELECT competitive_market FROM sb_sales LIMIT 1)
+    AND country = 'Ukraine' 
+    AND year = 2025
 )
-SELECT (sb.brand_sales / tm.total_sales * 100) as market_share_percent
+SELECT 
+    sb.brand_sales,
+    tm.total_sales,
+    (SELECT competitive_market FROM sb_sales) as market_segment,
+    ROUND((sb.brand_sales / tm.total_sales * 100), 2) as market_share_percent
 FROM sb_sales sb, total_market tm
 ```
 
@@ -251,31 +260,37 @@ QUERY GENERATION RULES:
 MARKET SHARE CALCULATION PATTERN:
 ```sql
 WITH brand_data AS (
-    SELECT SUM(sales_euro) as brand_sales, competitive_market
+    SELECT 
+        SUM(sales_euro) as brand_sales, 
+        competitive_market
     FROM pharma_sales
     WHERE (brands_new = 'BrandName' OR brand = 'BrandName')
-    AND country = 'CountryName' AND year = 2025
-    GROUP BY competitive_market
+    AND country = 'CountryName' 
+    AND year = 2025
 ),
 total_market AS (
     SELECT SUM(sales_euro) as total_sales
     FROM pharma_sales
-    WHERE competitive_market = (SELECT competitive_market FROM brand_data)
-    AND country = 'CountryName' AND year = 2025
+    WHERE competitive_market = (SELECT competitive_market FROM brand_data LIMIT 1)
+    AND country = 'CountryName' 
+    AND year = 2025
 )
 SELECT 
     bd.brand_sales,
     tm.total_sales,
+    bd.competitive_market,
     ROUND((bd.brand_sales / tm.total_sales * 100), 2) as market_share_percent
 FROM brand_data bd, total_market tm
 ```
 
 CRITICAL MARKET SHARE RULES:
+- ALWAYS use parentheses around OR conditions: WHERE (brands_new = 'Brand' OR brand = 'Brand') AND country = 'Country'
 - ALWAYS identify the competitive_market for the requested brand first
-- ALWAYS filter total sales by the SAME competitive_market
-- ALWAYS apply the same filters (country, period) to both brand and total calculations
+- ALWAYS filter total sales by the SAME competitive_market AND same filters (country, period)
 - Market share = Brand Sales / Total Competitive Market Sales (NOT total database sales)
-- DO NOT use placeholder text like [other conditions] - use actual column conditions
+- Market share should NEVER exceed 100% - if it does, check the competitive_market filtering
+- Use LIMIT 1 when selecting competitive_market to avoid multiple values
+- ALWAYS include the competitive_market in output to verify correct market identification
 
 Return ONLY the SQL query with trend analysis, no explanations or markdown formatting.
 """
