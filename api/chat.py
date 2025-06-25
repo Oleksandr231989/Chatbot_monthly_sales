@@ -111,7 +111,10 @@ BRAND SEARCH STRATEGY:
 - Use OR condition to search both columns: WHERE brands_new = 'BrandName' OR brand = 'BrandName'
 
 CRITICAL TREND ANALYSIS REQUIREMENTS:
-7. DEFAULT PERIOD: If no period specified, use MAT (Moving Annual Total) - last 12 months
+7. PERIOD DEFINITIONS:
+   - YTD (Year-to-Date): Sales from January 1st of current year to current date
+   - MAT (Moving Annual Total): Sales for the last 12 months from current date
+   - If no period specified: Use MAT as default
 8. SALES METRICS: Always provide BOTH sales_euro AND sales_units unless specifically asked for one
 9. MANDATORY: Always include previous year comparison for vs PY,% calculation
 10. For YEARLY data: Include year-over-year growth comparison
@@ -131,14 +134,23 @@ previous_mat AS (
     FROM pharma_sales
     WHERE date >= date('now', '-24 months') AND date < date('now', '-12 months') AND [other conditions]
 )
-SELECT
-    cp.current_sales,
-    cp.current_units,
-    pp.previous_sales,
-    pp.previous_units,
-    ROUND(((cp.current_sales - pp.previous_sales) / pp.previous_sales * 100), 2) as sales_growth_percent,
-    ROUND(((cp.current_units - pp.previous_units) / pp.previous_units * 100), 2) as units_growth_percent
-FROM current_mat cp, previous_mat pp
+SELECT ... FROM current_mat cp, previous_mat pp
+```
+
+YTD QUERY STRUCTURE (Year-to-Date):
+```sql
+WITH current_ytd AS (
+    SELECT SUM(sales_euro) as current_sales, SUM(sales_units) as current_units
+    FROM pharma_sales
+    WHERE year = strftime('%Y', 'now') AND [other conditions]
+),
+previous_ytd AS (
+    SELECT SUM(sales_euro) as previous_sales, SUM(sales_units) as previous_units
+    FROM pharma_sales
+    WHERE year = (strftime('%Y', 'now') - 1) 
+    AND month <= strftime('%m', 'now') AND [other conditions]
+)
+SELECT ... FROM current_ytd cy, previous_ytd py
 ```
 
 FOR MONTHLY ANALYSIS:
@@ -390,7 +402,8 @@ PERIOD SPECIFICATION EXAMPLES:
 - "for 2025" (full year)
 - "for January-March 2025" (quarterly)
 - "for June 2025" (monthly)
-- "for MAT ending June 2025" (moving annual total)
+- "for YTD 2025" (Year-to-Date: January 1st to current date)
+- "for MAT ending June 2025" (Moving Annual Total: last 12 months)
 - "for Q1 2025" (quarterly)
 - "for H1 2025" (half year)
 
