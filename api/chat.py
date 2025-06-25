@@ -121,17 +121,20 @@ KEY BUSINESS RULES:
 6. Market share = (Brand Sales / Total Market Sales) * 100
 
 CRITICAL TREND ANALYSIS REQUIREMENTS:
-7. For YEARLY data: ALWAYS include year-over-year growth comparison
-8. For MONTHLY data: ALWAYS include month-over-month AND year-over-year comparison
-9. For PERIOD data: Compare same periods (e.g., Jan-May 2025 vs Jan-May 2024)
-10. NEVER provide absolute figures without context - always show growth rates
+7. DEFAULT PERIOD: If no period specified, use MAT (Moving Annual Total) - last 12 months
+8. SALES METRICS: Always provide BOTH sales_euro AND sales_units unless specifically asked for one
+9. For YEARLY data: Include year-over-year growth comparison
+10. For MONTHLY data: Include month-over-month AND year-over-year comparison
+11. For PERIOD data: Compare same periods (e.g., Jan-May 2025 vs Jan-May 2024)
+12. Keep analysis simple and factual - avoid complex interpretations
 
 MANDATORY QUERY PATTERNS:
 
-FOR YEARLY ANALYSIS:
-- Current year sales + Previous year same months comparison
-- Calculate growth rate: ((Current - Previous) / Previous) * 100
-- Example: 2025 sales vs same months in 2024
+FOR DEFAULT QUERIES (no period specified):
+- Use MAT (Moving Annual Total) - last 12 months from current data
+- Example: If data goes to June 2025, use July 2024 - June 2025
+- Always show both sales_euro and sales_units
+- Compare to previous 12-month period for growth
 
 FOR MONTHLY ANALYSIS:
 - Current month vs previous month (sequential)
@@ -142,17 +145,17 @@ FOR PERIOD ANALYSIS (e.g., Q1, Jan-Mar, etc.):
 - Current period vs same period previous year
 - Calculate percentage growth
 
-TREND ANALYSIS QUERY STRUCTURE:
+DEFAULT MAT QUERY STRUCTURE (when no period specified):
 ```sql
-WITH current_period AS (
+WITH current_mat AS (
     SELECT SUM(sales_euro) as current_sales, SUM(sales_units) as current_units
     FROM pharma_sales
-    WHERE [current period conditions]
+    WHERE date >= date('now', '-12 months') AND [other conditions]
 ),
-previous_period AS (
+previous_mat AS (
     SELECT SUM(sales_euro) as previous_sales, SUM(sales_units) as previous_units
     FROM pharma_sales
-    WHERE [previous period conditions]
+    WHERE date >= date('now', '-24 months') AND date < date('now', '-12 months') AND [other conditions]
 )
 SELECT
     cp.current_sales,
@@ -161,7 +164,7 @@ SELECT
     pp.previous_units,
     ROUND(((cp.current_sales - pp.previous_sales) / pp.previous_sales * 100), 2) as sales_growth_percent,
     ROUND(((cp.current_units - pp.previous_units) / pp.previous_units * 100), 2) as units_growth_percent
-FROM current_period cp, previous_period pp
+FROM current_mat cp, previous_mat pp
 ```
 
 SPECIFIC EXAMPLES:
@@ -328,58 +331,34 @@ Return ONLY the SQL query with trend analysis, no explanations or markdown forma
             lang_prompt = language_prompts.get(detected_language, language_prompts['english'])
 
             response_prompt = f"""
-You are a pharmaceutical data analyst providing FACTUAL analysis based only on database results.
+You are a pharmaceutical data analyst providing SIMPLE, FACTUAL analysis based only on database results.
 
 DETECTED LANGUAGE: {detected_language.upper()}
-ANALYSIS TYPE: {response_type}
 USER QUESTION: {user_question}
-ENTITIES IDENTIFIED: Brand: {brand_mentioned}, Country: {country_mentioned}, Market: {market_mentioned}, Company: {company_mentioned}
 QUERY RESULTS: {results_text}
 
 CRITICAL REQUIREMENTS:
 1. RESPOND ONLY IN {detected_language.upper()} - DO NOT MIX LANGUAGES
-2. Use ONLY factual data from the database results
-3. DO NOT speculate about marketing campaigns, customer acquisition, or external factors
-4. DO NOT mention causes you cannot verify from the data
-5. Stick to mathematical comparisons and observable data trends
-6. Use ONLY the data provided - no assumptions or industry knowledge
+2. Keep responses SIMPLE and FACTUAL - just state the numbers
+3. Always provide BOTH sales in euros AND units when available
+4. DO NOT speculate or provide causes - only state what the data shows
+5. Use clear, simple language
 
-RESPONSE STRUCTURE (in {detected_language.upper()}):
-```
-{lang_prompt['analysis_header']}
-{lang_prompt['separator']}
-{lang_prompt['current_performance']} [State exact figures from database]
-{lang_prompt['growth_comparison']} [Mathematical comparison with previous periods from data]
+SIMPLE RESPONSE FORMAT (in {detected_language.upper()}):
 
-{lang_prompt['key_insights']}
-{lang_prompt['data_observations']} [What the numbers show without speculation]
-{lang_prompt['comparative_analysis']} [How metrics compare to previous periods based on data]
-{lang_prompt['quantitative_trends']} [Mathematical trends visible in the data]
-{lang_prompt['measurable_changes']} [Specific percentage changes and numerical differences]
-```
+**Sales Results:**
+- Sales (Euros): [exact amount from data]
+- Sales (Units): [exact amount from data] 
+- Growth vs previous period: [percentage if available]
 
-LANGUAGE-SPECIFIC PHRASES TO USE:
-- English: "The data shows...", "According to database records...", "Mathematical comparison reveals...", "Numerical analysis indicates..."
-- Spanish: "Los datos muestran...", "Según los registros de la base de datos...", "La comparación matemática revela...", "El análisis numérico indica..."
-- French: "Les données montrent...", "Selon les enregistrements de la base de données...", "La comparaison mathématique révèle...", "L'analyse numérique indique..."
+Keep it simple, factual, and direct. No complex analysis or speculation.
 
-AVOID COMPLETELY:
-- Speculation about marketing campaigns
-- Assumptions about customer behavior
-- External market factors not in database
-- Business strategy recommendations
-- Causal explanations without data support
-- Industry knowledge not present in results
-- MIXING LANGUAGES
+LANGUAGE-SPECIFIC PHRASES:
+- English: "Sales results show...", "The data indicates...", "Growth rate:", "Total sales:"
+- Spanish: "Los resultados de ventas muestran...", "Los datos indican...", "Tasa de crecimiento:", "Ventas totales:"
+- French: "Les résultats des ventes montrent...", "Les données indiquent...", "Taux de croissance:", "Ventes totales:"
 
-FOCUS ON:
-- Exact numerical values
-- Mathematical comparisons
-- Percentage calculations
-- Data trends visible in numbers
-- Factual observations only
-
-Provide only data-driven insights based on the database query results in {detected_language.upper()} ONLY.
+Provide only factual numbers and basic comparisons in {detected_language.upper()}.
 """
 
             response = self.client.chat.completions.create(
@@ -388,7 +367,7 @@ Provide only data-driven insights based on the database query results in {detect
                     {"role": "system", "content": f"You are a pharmaceutical data analyst. CRITICAL: Respond ONLY in {detected_language.upper()}. If the user asks in English, respond ONLY in English. If the user asks in Spanish, respond ONLY in Spanish. If the user asks in French, respond ONLY in French. NEVER mix languages. Provide ONLY factual analysis based on the database results. Do not speculate about marketing campaigns, customer acquisition, or external factors not present in the data."},
                     {"role": "user", "content": response_prompt}
                 ],
-                temperature=0,  # Factual responses, no creativity
+                temperature=0.2,  # 20% temperature for more factual responses
                 max_tokens=1200
             )
 
