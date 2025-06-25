@@ -52,15 +52,16 @@ header p {
 .input-container {
     display: flex;
     gap: 10px;
-    max-width: 600px; /* Increased width */
+    max-width: 800px; /* Increased from 600px */
     margin: 0 auto 10px; /* Reduced bottom margin */
     flex-wrap: wrap; /* Allow wrapping on smaller screens */
     padding: 20px 30px 10px; /* Add padding */
-    background: #f8f9fa;
+    background: white; /* Changed from #f8f9fa to white */
 }
 
 .input-container input {
     flex: 1;
+    min-width: 400px; /* Added minimum width */
     padding: 15px 20px;
     border: 2px solid #e9ecef;
     border-radius: 25px;
@@ -201,7 +202,7 @@ header p {
 .reset-container {
     text-align: center;
     padding: 0px 30px 20px; /* Reduced top padding */
-    background: #f8f9fa;
+    background: white; /* Changed from #f8f9fa to white */
 }
 
 .reset-btn {
@@ -299,8 +300,13 @@ table th {
     
     .input-container {
         flex-direction: column;
-        max-width: 100%;
+        max-width: 95%; /* Increased for mobile */
         padding: 15px 20px 10px;
+    }
+    
+    .input-container input {
+        min-width: auto; /* Remove min-width on mobile */
+        margin-bottom: 10px;
     }
     
     .input-container input {
