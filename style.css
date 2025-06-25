@@ -53,8 +53,10 @@ header p {
     display: flex;
     gap: 10px;
     max-width: 600px; /* Increased width */
-    margin: 0 auto 15px;
+    margin: 0 auto 10px; /* Reduced bottom margin */
     flex-wrap: wrap; /* Allow wrapping on smaller screens */
+    padding: 20px 30px 10px; /* Add padding */
+    background: #f8f9fa;
 }
 
 .input-container input {
@@ -137,7 +139,8 @@ header p {
 }
 
 .chat-container {
-    height: 500px; /* Increased from 400px */
+    height: calc(100vh - 350px); /* Dynamic height based on viewport */
+    min-height: 400px; /* Minimum height */
     display: flex;
     flex-direction: column;
 }
@@ -148,6 +151,7 @@ header p {
     padding: 30px; /* Increased padding */
     background: #f8f9fa;
     max-width: 100%;
+    min-height: 300px; /* Ensure minimum height */
 }
 
 .message {
@@ -196,7 +200,7 @@ header p {
 
 .reset-container {
     text-align: center;
-    padding: 10px 30px 20px;
+    padding: 0px 30px 20px; /* Reduced top padding */
     background: #f8f9fa;
 }
 
@@ -288,9 +292,15 @@ table th {
         font-size: 2em;
     }
     
+    .chat-container {
+        height: calc(100vh - 280px); /* Adjusted for mobile */
+        min-height: 350px;
+    }
+    
     .input-container {
         flex-direction: column;
         max-width: 100%;
+        padding: 15px 20px 10px;
     }
     
     .input-container input {
