@@ -127,14 +127,22 @@ DEFAULT MAT QUERY STRUCTURE (when no period specified):
 WITH current_mat AS (
     SELECT SUM(sales_euro) as current_sales, SUM(sales_units) as current_units
     FROM pharma_sales
-    WHERE date >= date('now', '-12 months') AND [other conditions]
+    WHERE date >= date('now', '-12 months') 
+    AND (brands_new = 'BrandName' OR brand = 'BrandName')
+    AND country = 'CountryName'
 ),
 previous_mat AS (
     SELECT SUM(sales_euro) as previous_sales, SUM(sales_units) as previous_units
     FROM pharma_sales
-    WHERE date >= date('now', '-24 months') AND date < date('now', '-12 months') AND [other conditions]
+    WHERE date >= date('now', '-24 months') AND date < date('now', '-12 months')
+    AND (brands_new = 'BrandName' OR brand = 'BrandName')
+    AND country = 'CountryName'
 )
-SELECT ... FROM current_mat cp, previous_mat pp
+SELECT 
+    cm.current_sales, cm.current_units,
+    pm.previous_sales, pm.previous_units,
+    ROUND(((cm.current_sales - pm.previous_sales) / pm.previous_sales * 100), 2) as sales_growth_percent
+FROM current_mat cm, previous_mat pm
 ```
 
 YTD QUERY STRUCTURE (Year-to-Date):
@@ -142,15 +150,23 @@ YTD QUERY STRUCTURE (Year-to-Date):
 WITH current_ytd AS (
     SELECT SUM(sales_euro) as current_sales, SUM(sales_units) as current_units
     FROM pharma_sales
-    WHERE year = strftime('%Y', 'now') AND [other conditions]
+    WHERE year = strftime('%Y', 'now')
+    AND (brands_new = 'BrandName' OR brand = 'BrandName')
+    AND country = 'CountryName'
 ),
 previous_ytd AS (
     SELECT SUM(sales_euro) as previous_sales, SUM(sales_units) as previous_units
     FROM pharma_sales
     WHERE year = (strftime('%Y', 'now') - 1) 
-    AND month <= strftime('%m', 'now') AND [other conditions]
+    AND month <= strftime('%m', 'now')
+    AND (brands_new = 'BrandName' OR brand = 'BrandName')
+    AND country = 'CountryName'
 )
-SELECT ... FROM current_ytd cy, previous_ytd py
+SELECT 
+    cy.current_sales, cy.current_units,
+    py.previous_sales, py.previous_units,
+    ROUND(((cy.current_sales - py.previous_sales) / py.previous_sales * 100), 2) as sales_growth_percent
+FROM current_ytd cy, previous_ytd py
 ```
 
 FOR MONTHLY ANALYSIS:
@@ -238,14 +254,14 @@ WITH brand_data AS (
     SELECT SUM(sales_euro) as brand_sales, competitive_market
     FROM pharma_sales
     WHERE (brands_new = 'BrandName' OR brand = 'BrandName')
-    AND [other filters like country, year, etc.]
+    AND country = 'CountryName' AND year = 2025
     GROUP BY competitive_market
 ),
 total_market AS (
     SELECT SUM(sales_euro) as total_sales
     FROM pharma_sales
     WHERE competitive_market = (SELECT competitive_market FROM brand_data)
-    AND [same filters as brand_data]
+    AND country = 'CountryName' AND year = 2025
 )
 SELECT 
     bd.brand_sales,
@@ -259,6 +275,7 @@ CRITICAL MARKET SHARE RULES:
 - ALWAYS filter total sales by the SAME competitive_market
 - ALWAYS apply the same filters (country, period) to both brand and total calculations
 - Market share = Brand Sales / Total Competitive Market Sales (NOT total database sales)
+- DO NOT use placeholder text like [other conditions] - use actual column conditions
 
 Return ONLY the SQL query with trend analysis, no explanations or markdown formatting.
 """
