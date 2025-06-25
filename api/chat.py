@@ -341,24 +341,26 @@ CRITICAL REQUIREMENTS:
 1. RESPOND ONLY IN {detected_language.upper()} - DO NOT MIX LANGUAGES
 2. Keep responses SIMPLE and FACTUAL - just state the numbers
 3. Always provide BOTH sales in euros AND units when available
-4. DO NOT speculate or provide causes - only state what the data shows
-5. Use clear, simple language
+4. DO NOT calculate or mention growth vs previous period unless specifically requested
+5. If user asks for "table" or "show table", provide data in table format
+6. Use clear, simple language
 
 SIMPLE RESPONSE FORMAT (in {detected_language.upper()}):
 
 **Sales Results:**
 - Sales (Euros): [exact amount from data]
-- Sales (Units): [exact amount from data] 
-- Growth vs previous period: [percentage if available]
+- Sales (Units): [exact amount from data]
 
-Keep it simple, factual, and direct. No complex analysis or speculation.
+If user requests table format, present data as a simple table.
+
+Keep it simple, factual, and direct. No growth calculations unless requested.
 
 LANGUAGE-SPECIFIC PHRASES:
-- English: "Sales results show...", "The data indicates...", "Growth rate:", "Total sales:"
-- Spanish: "Los resultados de ventas muestran...", "Los datos indican...", "Tasa de crecimiento:", "Ventas totales:"
-- French: "Les résultats des ventes montrent...", "Les données indiquent...", "Taux de croissance:", "Ventes totales:"
+- English: "Sales results show...", "The data indicates...", "Total sales:"
+- Spanish: "Los resultados de ventas muestran...", "Los datos indican...", "Ventas totales:"
+- French: "Les résultats des ventes montrent...", "Les données indiquent...", "Ventes totales:"
 
-Provide only factual numbers and basic comparisons in {detected_language.upper()}.
+Provide only factual numbers in {detected_language.upper()}.
 """
 
             response = self.client.chat.completions.create(
@@ -393,7 +395,6 @@ class handler(BaseHTTPRequestHandler):
             if not api_key or not api_key.startswith('sk-'):
                 self.send_response_json({
                     'error': "Valid OpenAI API key required",
-                    'sql_query': None,
                     'data': []
                 }, 400)
                 return
@@ -411,13 +412,11 @@ class handler(BaseHTTPRequestHandler):
                 if test_error:
                     self.send_response_json({
                         'error': f"Database error: {test_error}",
-                        'sql_query': None,
                         'data': []
                     })
                 else:
                     self.send_response_json({
                         'response': f"✅ Connected! Database has {test_df.iloc[0]['total']:,} records. Using GPT-4o Mini for fast, cost-effective analysis.",
-                        'sql_query': "SELECT COUNT(*) as total FROM pharma_sales",
                         'data': test_df.to_dict('records'),
                         'total_rows': len(test_df)
                     })
@@ -428,7 +427,6 @@ class handler(BaseHTTPRequestHandler):
             if sql_error:
                 self.send_response_json({
                     'error': sql_error,
-                    'sql_query': None,
                     'data': []
                 })
                 return
@@ -438,7 +436,6 @@ class handler(BaseHTTPRequestHandler):
             if db_error:
                 self.send_response_json({
                     'error': f"Database error: {db_error}",
-                    'sql_query': sql_query,
                     'data': []
                 })
                 return
@@ -457,7 +454,6 @@ class handler(BaseHTTPRequestHandler):
             
             self.send_response_json({
                 'response': response,
-                'sql_query': sql_query,
                 'data': data_for_response,
                 'total_rows': len(results_df) if results_df is not None else 0
             })
@@ -469,7 +465,6 @@ class handler(BaseHTTPRequestHandler):
         except Exception as e:
             self.send_response_json({
                 'error': f"Server error: {str(e)}",
-                'sql_query': None,
                 'data': []
             }, 500)
     
