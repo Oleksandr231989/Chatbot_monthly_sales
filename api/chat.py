@@ -97,7 +97,11 @@ KEY BUSINESS RULES:
 3. 'sales_euro' is the PRIMARY metric for sales comparisons
 4. For Biocodex queries: WHERE corp_new LIKE '%biocodex%' OR corp_new LIKE '%BIOCODEX%'
 5. Brand 'Sb' is a major Biocodex brand: Use WHERE brands_new = 'Sb' (EXACT match, not LIKE)
-6. Market share = (Brand Sales / Total Market Sales) * 100
+6. MARKET SHARE CALCULATION: Brand Sales ÷ Total Competitive Market Sales × 100
+   - Market Share = (Specific Brand Sales in filters) / (Total Sales for same competitive_market with same filters) * 100
+   - Example: Sb market share in Ukraine = Sb sales in Ukraine / Total competitive_market sales in Ukraine * 100
+   - ALWAYS filter total sales by the same competitive_market as the requested brand
+   - Keep all other filters (country, period, etc.) when calculating total market
 
 BRAND SEARCH STRATEGY:
 - Primary: Search in 'brands_new' column first (consolidated brand names) using EXACT match
@@ -148,10 +152,25 @@ FOR PERIOD ANALYSIS (e.g., Q1, Jan-Mar, etc.):
 
 SPECIFIC EXAMPLES:
 
-For "Sb sales in Ukraine 2025":
-- Query 2025 data AND same months of 2024
-- Use WHERE brands_new = 'Sb' (EXACT match in consolidated column)
-- Calculate 2025 vs 2024 growth rate
+For "Sb market share in Ukraine 2025":
+- Calculate: (Sb sales in Ukraine 2025) / (Total competitive_market sales in Ukraine 2025) * 100
+- First get Sb's competitive_market, then calculate total for that market
+- Query structure:
+```sql
+WITH sb_sales AS (
+    SELECT SUM(sales_euro) as brand_sales, competitive_market
+    FROM pharma_sales
+    WHERE (brands_new = 'Sb' OR brand = 'Sb') AND country = 'Ukraine' AND year = 2025
+),
+total_market AS (
+    SELECT SUM(sales_euro) as total_sales
+    FROM pharma_sales
+    WHERE competitive_market = (SELECT competitive_market FROM sb_sales)
+    AND country = 'Ukraine' AND year = 2025
+)
+SELECT (sb.brand_sales / tm.total_sales * 100) as market_share_percent
+FROM sb_sales sb, total_market tm
+```
 
 For "Florastor sales in Mexico 2025":
 - Use exact equality search: WHERE brands_new = 'Florastor' OR brand = 'Florastor'
@@ -197,25 +216,37 @@ QUERY GENERATION RULES:
 6. Include appropriate GROUP BY and ORDER BY clauses
 7. Use LIMIT for top/bottom queries
 8. Handle case-insensitive searches with LIKE and wildcards
-9. For market share calculations, use subqueries or CTEs
-10. MANDATORY: Include previous period comparison for context
+9. For market share calculations, use subqueries or CTEs with competitive_market filtering
+10. MARKET SHARE FORMULA: (Brand Sales with filters) / (Total competitive_market Sales with same filters) * 100
+11. MANDATORY: Include previous period comparison for context
 
-COMPREHENSIVE BRAND SEARCH PATTERN:
+MARKET SHARE CALCULATION PATTERN:
 ```sql
-WITH current_period AS (
-    SELECT SUM(sales_euro) as current_sales, SUM(sales_units) as current_units
+WITH brand_data AS (
+    SELECT SUM(sales_euro) as brand_sales, competitive_market
     FROM pharma_sales
     WHERE (brands_new = 'BrandName' OR brand = 'BrandName')
-    AND [other conditions]
+    AND [other filters like country, year, etc.]
+    GROUP BY competitive_market
 ),
-previous_period AS (
-    SELECT SUM(sales_euro) as previous_sales, SUM(sales_units) as previous_units
+total_market AS (
+    SELECT SUM(sales_euro) as total_sales
     FROM pharma_sales
-    WHERE (brands_new = 'BrandName' OR brand = 'BrandName')
-    AND [previous period conditions]
+    WHERE competitive_market = (SELECT competitive_market FROM brand_data)
+    AND [same filters as brand_data]
 )
-SELECT ... FROM current_period cp, previous_period pp
+SELECT 
+    bd.brand_sales,
+    tm.total_sales,
+    ROUND((bd.brand_sales / tm.total_sales * 100), 2) as market_share_percent
+FROM brand_data bd, total_market tm
 ```
+
+CRITICAL MARKET SHARE RULES:
+- ALWAYS identify the competitive_market for the requested brand first
+- ALWAYS filter total sales by the SAME competitive_market
+- ALWAYS apply the same filters (country, period) to both brand and total calculations
+- Market share = Brand Sales / Total Competitive Market Sales (NOT total database sales)
 
 Return ONLY the SQL query with trend analysis, no explanations or markdown formatting.
 """
@@ -312,8 +343,9 @@ CRITICAL REQUIREMENTS:
 4. ALWAYS specify the exact period for which data is extracted
 5. Explain what the figures mean in business context
 6. Provide insights based on the data patterns you observe
-7. If user asks for "table" or "show table", provide data in table format
-8. Use clear, professional language
+7. Use BOLD formatting for all important figures, numbers, and key metrics
+8. If user asks for "table" or "show table", provide data in table format
+9. Use clear, professional language
 
 ENHANCED RESPONSE FORMAT:
 
@@ -324,27 +356,35 @@ INTRODUCTION TEMPLATE:
 
 Then follow with:
 **Sales Results:**
-- Sales (Euros): [exact amount from data]
-- Sales (Units): [exact amount from data]
+- Sales (Euros): **[exact amount from data in bold]**
+- Sales (Units): **[exact amount from data in bold]**
 
 **Business Insights:**
-- [Explain what these figures indicate about performance]
-- [Provide context about the sales levels - are they high/low/typical?]
-- [If growth data available, explain the trend and its implications]
-- [Any notable patterns or observations from the data]
+- [Explain what these figures indicate about performance - use **bold** for key metrics and percentages]
+- [Provide context about the sales levels - are they high/low/typical? Bold important figures]
+- [If growth data available, explain the trend and its implications with **bold percentages**]
+- [Any notable patterns or observations from the data with **bold key numbers**]
 
 EXAMPLE OUTPUT:
 "The sales of product 'Sb' in Ukraine for January-June 2025 show the following results:"
 
 **Sales Results:**
-- Sales (Euros): 2,761,788
-- Sales (Units): 301,955
+- Sales (Euros): **2,761,788**
+- Sales (Units): **301,955**
 
 **Business Insights:**
-- The sales performance shows a significant decline compared to the previous year, with both revenue and unit sales dropping by approximately 65%
-- This represents a substantial reduction in market penetration, suggesting either market challenges or competitive pressures
-- The unit-to-revenue ratio indicates an average price point of approximately €9.15 per unit
+- The sales performance shows a **significant decline of approximately 65%** compared to the previous year, with both revenue and unit sales dropping substantially
+- This represents a **substantial reduction in market penetration**, suggesting either market challenges or competitive pressures
+- The unit-to-revenue ratio indicates an **average price point of approximately €9.15 per unit**
 - The decline pattern suggests this market may require strategic attention or revised market approach
+
+FORMATTING RULES:
+- Use **bold** for all sales figures (euros and units)
+- Use **bold** for all percentages and growth rates
+- Use **bold** for key performance indicators
+- Use **bold** for important ratios and calculated metrics
+- Use **bold** for significant trends or changes
+- Use **bold** for any numerical data that supports business insights
 
 PERIOD SPECIFICATION EXAMPLES:
 - "for 2025" (full year)
@@ -358,20 +398,21 @@ KEY ELEMENTS:
 1. Always mention: product name in quotes, country/market, and EXACT time period
 2. Natural transition: Use "show the following results" to bridge to the data
 3. MANDATORY: Always include business insights that explain what the numbers mean
-4. Provide context about performance levels and trends
-5. Calculate and mention relevant ratios or per-unit metrics when helpful
-6. Respond in the same language as the user's question automatically
+4. MANDATORY: Use **bold formatting** for all important figures and metrics
+5. Provide context about performance levels and trends
+6. Calculate and mention relevant ratios or per-unit metrics when helpful
+7. Respond in the same language as the user's question automatically
 
 INSIGHT GUIDELINES:
 - Focus on what the data tells us about business performance
-- Explain trends and their potential implications
-- Provide context about market performance
-- Mention any notable patterns or anomalies
+- Explain trends and their potential implications with **bold key figures**
+- Provide context about market performance using **bold metrics**
+- Mention any notable patterns or anomalies with **bold supporting data**
 - Suggest what the figures might indicate for business strategy (when clear from data)
 
-If user requests table format, present data as a simple table and still provide insights.
+If user requests table format, present data as a simple table and still provide insights with bold formatting.
 
-ALWAYS include meaningful business insights. No exceptions.
+ALWAYS include meaningful business insights with bold formatting for key figures. No exceptions.
 
 Provide factual numbers and professional business analysis in the same language as the user's question.
 """
