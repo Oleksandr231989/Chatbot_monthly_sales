@@ -165,9 +165,14 @@ function addMessage(content, sender) {
 function addBotResponse(data) {
     const responseDiv = document.createElement('div');
     
-    // Main response
+    // Main response with markdown processing
     const responseText = document.createElement('div');
-    responseText.innerHTML = data.response.replace(/\n/g, '<br>');
+    let processedResponse = data.response.replace(/\n/g, '<br>');
+    
+    // Convert **bold** markdown to HTML bold tags
+    processedResponse = processedResponse.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+    
+    responseText.innerHTML = processedResponse;
     responseDiv.appendChild(responseText);
     
     // SQL query (hidden by default with show button)
