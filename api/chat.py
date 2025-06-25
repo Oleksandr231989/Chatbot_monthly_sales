@@ -104,11 +104,12 @@ KEY BUSINESS RULES:
    - Keep all other filters (country, period, etc.) when calculating total market
 
 BRAND SEARCH STRATEGY:
-- Primary: Search in 'brands_new' column first (consolidated brand names) using EXACT match
-- Secondary: If no results in 'brands_new', search in 'brand' column using EXACT match
+- Primary: Search in 'brands_new' column first (consolidated brand names) using CASE-INSENSITIVE match
+- Secondary: If no results in 'brands_new', search in 'brand' column using CASE-INSENSITIVE match
 - Examples: 'Florastor' may appear in 'brand' but be consolidated as 'Sb' in 'brands_new'
-- ALWAYS use exact equality (=), NEVER use LIKE for brand searches
-- Use OR condition to search both columns: WHERE brands_new = 'BrandName' OR brand = 'BrandName'
+- ALWAYS use case-insensitive equality with UPPER() function for brand searches
+- Use OR condition: WHERE UPPER(brands_new) = UPPER('BrandName') OR UPPER(brand) = UPPER('BrandName')
+- This ensures 'Otipax', 'OTIPAX', 'otipax' all work the same way
 
 CRITICAL TREND ANALYSIS REQUIREMENTS:
 7. PERIOD DEFINITIONS:
@@ -128,14 +129,14 @@ WITH current_mat AS (
     SELECT SUM(sales_euro) as current_sales, SUM(sales_units) as current_units
     FROM pharma_sales
     WHERE date >= date('now', '-12 months') 
-    AND (brands_new = 'BrandName' OR brand = 'BrandName')
+    AND (UPPER(brands_new) = UPPER('BrandName') OR UPPER(brand) = UPPER('BrandName'))
     AND country = 'CountryName'
 ),
 previous_mat AS (
     SELECT SUM(sales_euro) as previous_sales, SUM(sales_units) as previous_units
     FROM pharma_sales
     WHERE date >= date('now', '-24 months') AND date < date('now', '-12 months')
-    AND (brands_new = 'BrandName' OR brand = 'BrandName')
+    AND (UPPER(brands_new) = UPPER('BrandName') OR UPPER(brand) = UPPER('BrandName'))
     AND country = 'CountryName'
 )
 SELECT 
@@ -151,7 +152,7 @@ WITH current_ytd AS (
     SELECT SUM(sales_euro) as current_sales, SUM(sales_units) as current_units
     FROM pharma_sales
     WHERE year = strftime('%Y', 'now')
-    AND (brands_new = 'BrandName' OR brand = 'BrandName')
+    AND (UPPER(brands_new) = UPPER('BrandName') OR UPPER(brand) = UPPER('BrandName'))
     AND country = 'CountryName'
 ),
 previous_ytd AS (
@@ -159,7 +160,7 @@ previous_ytd AS (
     FROM pharma_sales
     WHERE year = (strftime('%Y', 'now') - 1) 
     AND month <= strftime('%m', 'now')
-    AND (brands_new = 'BrandName' OR brand = 'BrandName')
+    AND (UPPER(brands_new) = UPPER('BrandName') OR UPPER(brand) = UPPER('BrandName'))
     AND country = 'CountryName'
 )
 SELECT 
@@ -190,7 +191,7 @@ WITH sb_sales AS (
         SUM(sales_euro) as brand_sales, 
         competitive_market
     FROM pharma_sales
-    WHERE (brands_new = 'Sb' OR brand = 'Sb') 
+    WHERE (UPPER(brands_new) = UPPER('Sb') OR UPPER(brand) = UPPER('Sb')) 
     AND country = 'Ukraine' 
     AND year = 2025
 ),
@@ -209,16 +210,15 @@ SELECT
 FROM sb_sales sb, total_market tm
 ```
 
-For "Florastor sales in Mexico 2025":
-- Use exact equality search: WHERE brands_new = 'Florastor' OR brand = 'Florastor'
-- NO LIKE patterns - only exact matches
-- Comprehensive search: brands_new = 'Florastor' OR brand = 'Florastor'
+For "Otipax sales in Mexico 2025":
+- Use case-insensitive search: WHERE UPPER(brands_new) = UPPER('Otipax') OR UPPER(brand) = UPPER('Otipax')
+- This will match 'OTIPAX', 'Otipax', 'otipax' in the database
+- Comprehensive search: UPPER(brands_new) = UPPER('Otipax') OR UPPER(brand) = UPPER('Otipax')
 
-For "Unknown brand sales":
-- Use exact equality in both columns:
-```sql
-SELECT * FROM pharma_sales WHERE brands_new = 'BrandName' OR brand = 'BrandName'
-```
+For "Brand name case variations":
+- User types: 'sb', 'Sb', 'SB' → All should work
+- User types: 'otipax', 'Otipax', 'OTIPAX' → All should work
+- Query: WHERE UPPER(brands_new) = UPPER('UserInput') OR UPPER(brand) = UPPER('UserInput')
 
 For "Sb sales Q1 2025":
 - Query Jan-Mar 2025 data
@@ -236,11 +236,11 @@ CRITICAL COLUMN USAGE:
 SAMPLE COUNTRIES: Mexico, Brazil, France, Germany, Belgium, Poland, Ukraine, Russia, Turkey, US
 SAMPLE BRANDS: Sb, OTIPAX, SAFORELLE, MUCOGYNE, HYDROMEGA, GALACTOGIL, SYMBIOSYS, Florastor
 BRAND MATCHING RULES:
-- For exact brand names like 'Sb': Use brands_new = 'Sb' (EXACT match)
-- For brand names like 'Florastor': May be in brand column, use both with EXACT equality
-- Search strategy: WHERE brands_new = 'BrandName' OR brand = 'BrandName'
-- ALWAYS use exact equality (=) for brand searches, NEVER use LIKE
-- Comprehensive search covers both brand columns with exact matches only
+- For brand names: Use case-insensitive search with UPPER() function
+- Search strategy: WHERE UPPER(brands_new) = UPPER('BrandName') OR UPPER(brand) = UPPER('BrandName')
+- Examples: 'Otipax', 'OTIPAX', 'otipax' should all work the same
+- ALWAYS use UPPER() function for both column and search value
+- This ensures case-insensitive matching while maintaining exact brand identification
 SAMPLE MARKETS: Gut Microbiota Care, Ear Drops, Intimate Dryness, Immunity, Urinary
 DATA YEARS: 2023, 2024, 2025 (use for trend comparisons)
 
@@ -264,7 +264,7 @@ WITH brand_data AS (
         SUM(sales_euro) as brand_sales, 
         competitive_market
     FROM pharma_sales
-    WHERE (brands_new = 'BrandName' OR brand = 'BrandName')
+    WHERE (UPPER(brands_new) = UPPER('BrandName') OR UPPER(brand) = UPPER('BrandName'))
     AND country = 'CountryName' 
     AND year = 2025
 ),
