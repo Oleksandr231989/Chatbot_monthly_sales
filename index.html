@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🏥 Pharma Sales Analytics Chatbot</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🏥 Pharma Sales Analytics Chatbot</h1>
+            <p>🌍 Ask questions about your pharmaceutical data in any language</p>
+        </header>
+
+        <!-- API Key Setup -->
+        <div class="api-setup" id="apiSetup">
+            <h3>🔑 Enter your OpenAI API Key to start:</h3>
+            <div class="input-container">
+                <input type="password" id="apiKeyInput" placeholder="sk-..." />
+                <button id="connectButton">Connect</button>
+            </div>
+            <p><small>Get your API key from: <a href="https://platform.openai.com/api-keys" target="_blank">OpenAI Dashboard</a></small></p>
+        </div>
+
+        <!-- Chat Interface (hidden initially) -->
+        <div class="chat-section" id="chatSection" style="display: none;">
+            <div class="sample-questions">
+                <h3>💡 Sample Questions:</h3>
+                <button class="sample-btn" onclick="askQuestion('What are Sb sales in Mexico in 2024?')">
+                    Sb sales in Mexico 2024
+                </button>
+                <button class="sample-btn" onclick="askQuestion('Show me top 5 brands by sales')">
+                    Top 5 brands by sales
+                </button>
+            </div>
+
+            <div class="chat-container">
+                <div class="chat-messages" id="chatMessages">
+                    <div class="message bot-message">
+                        <div class="message-content">
+                            <p><strong>🤖 Ready!</strong> I can analyze your pharmaceutical sales data.</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="input-container">
+                    <input type="text" id="messageInput" placeholder="Ask about your sales data..." />
+                    <button id="sendButton">Send</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="loading" id="loading" style="display: none;">
+            <div class="spinner"></div>
+            <p>Analyzing your data...</p>
+        </div>
+    </div>
+    
+    <script src="script.js"></script>
+</body>
+</html>
