@@ -283,21 +283,18 @@ SELECT
 FROM brand_data bd, total_market tm
 ```
 
-CRITICAL - QUERY MODIFICATION FOR UNITS/VOLUME:
-When user asks for "same data in units" or "same data in volume" or "in units":
-1. KEEP THE EXACT SAME QUERY STRUCTURE from the previous successful query
-2. ONLY replace ALL instances of "sales_euro" with "sales_units" 
-3. DO NOT change any other part of the query:
-   - Keep the same WHERE conditions
-   - Keep the same time period filters (years, months, etc.)
-   - Keep the same GROUP BY clauses
-   - Keep the same JOINs and CTEs
-   - Keep the same country, brand, and market filters
-4. EXAMPLE TRANSFORMATION:
-   - Original: SELECT SUM(sales_euro) as brand_sales FROM pharma_sales WHERE...
-   - Units version: SELECT SUM(sales_units) as brand_sales FROM pharma_sales WHERE...
-5. DO NOT create a new MAT query when user asks for units of an existing yearly breakdown
-6. DO NOT change the response structure - keep the same grouping and analysis format
+CRITICAL: When user asks for "same data in units/volume":
+- DO NOT create a new query with different time periods
+- DO NOT change the filters or WHERE conditions
+- ONLY replace sales_euro with sales_units in the SELECT and calculation parts
+- Keep the same year range, country, brand, and all other conditions identical
+- Example: If previous query was "by years" for 2022-2025, keep the same year range
+
+CRITICAL: When user asks for "same data in euros/value":
+- DO NOT create a new query with different time periods  
+- DO NOT change the filters or WHERE conditions
+- ONLY replace sales_units with sales_euro in the SELECT and calculation parts
+- Keep the same year range, country, brand, and all other conditions identical
 
 Return ONLY the SQL query with trend analysis, no explanations or markdown formatting.
 """
