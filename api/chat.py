@@ -79,7 +79,8 @@ EXACT COLUMN NAMES (case-sensitive):
 - submarket_1: TEXT - Submarket level 1 (e.g., 'Probiotic', 'Non Probiotic')
 - submarket_2: TEXT - Submarket level 2
 - corporation_original: TEXT - Original corporation name
-- brand: TEXT - Original brand name (NOT brand_original)
+- Brand: TEXT - Original brand name (check actual column name)
+- brand_name: TEXT - Alternative original brand name (if Brand doesn't exist)
 - product: TEXT - Product/SKU name
 - sales_local_currency: REAL - Sales in local currency
 - sales_units: INTEGER - Sales units/volume
@@ -99,10 +100,11 @@ KEY BUSINESS RULES:
 6. Market share = (Brand Sales / Total Market Sales) * 100
 
 BRAND SEARCH STRATEGY:
-- Primary: Search in 'brands_new' column first (consolidated brand names)
-- Secondary: If no results in 'brands_new', search in 'brand' column (original brand names)
+- Primary: Search in 'brands_new' column first (consolidated brand names) using EXACT match
+- Secondary: If no results in 'brands_new', search in 'brand' column using EXACT match
 - Examples: 'Florastor' may appear in 'brand' but be consolidated as 'Sb' in 'brands_new'
-- Use exact matches for specific brand names, LIKE patterns for partial searches
+- ALWAYS use exact equality (=), NEVER use LIKE for brand searches
+- Use OR condition to search both columns: WHERE brands_new = 'BrandName' OR brand = 'BrandName'
 
 CRITICAL TREND ANALYSIS REQUIREMENTS:
 7. DEFAULT PERIOD: If no period specified, use MAT (Moving Annual Total) - last 12 months
@@ -152,16 +154,14 @@ For "Sb sales in Ukraine 2025":
 - Calculate 2025 vs 2024 growth rate
 
 For "Florastor sales in Mexico 2025":
-- First try: WHERE brands_new = 'Florastor'
-- If no results, try: WHERE brand LIKE '%Florastor%'
-- Use comprehensive search: WHERE brands_new = 'Florastor' OR brand LIKE '%Florastor%'
+- Use exact equality search: WHERE brands_new = 'Florastor' OR brand = 'Florastor'
+- NO LIKE patterns - only exact matches
+- Comprehensive search: brands_new = 'Florastor' OR brand = 'Florastor'
 
 For "Unknown brand sales":
-- Use UNION query to search both brand columns:
+- Use exact equality in both columns:
 ```sql
-SELECT * FROM pharma_sales WHERE brands_new LIKE '%BrandName%'
-UNION
-SELECT * FROM pharma_sales WHERE brand LIKE '%BrandName%'
+SELECT * FROM pharma_sales WHERE brands_new = 'BrandName' OR brand = 'BrandName'
 ```
 
 For "Sb sales Q1 2025":
@@ -181,10 +181,10 @@ SAMPLE COUNTRIES: Mexico, Brazil, France, Germany, Belgium, Poland, Ukraine, Rus
 SAMPLE BRANDS: Sb, OTIPAX, SAFORELLE, MUCOGYNE, HYDROMEGA, GALACTOGIL, SYMBIOSYS, Florastor
 BRAND MATCHING RULES:
 - For exact brand names like 'Sb': Use brands_new = 'Sb' (EXACT match)
-- For brand names like 'Florastor': May be in brand column, try both columns
-- Search strategy: WHERE brands_new = 'BrandName' OR brand LIKE '%BrandName%'
-- Always prefer EXACT matches in brands_new, then search brand if needed
-- Use UNION queries when searching both brand columns for comprehensive results
+- For brand names like 'Florastor': May be in brand column, use both with EXACT equality
+- Search strategy: WHERE brands_new = 'BrandName' OR brand = 'BrandName'
+- ALWAYS use exact equality (=) for brand searches, NEVER use LIKE
+- Comprehensive search covers both brand columns with exact matches only
 SAMPLE MARKETS: Gut Microbiota Care, Ear Drops, Intimate Dryness, Immunity, Urinary
 DATA YEARS: 2023, 2024, 2025 (use for trend comparisons)
 
@@ -205,13 +205,13 @@ COMPREHENSIVE BRAND SEARCH PATTERN:
 WITH current_period AS (
     SELECT SUM(sales_euro) as current_sales, SUM(sales_units) as current_units
     FROM pharma_sales
-    WHERE (brands_new = 'BrandName' OR brand LIKE '%BrandName%')
+    WHERE (brands_new = 'BrandName' OR brand = 'BrandName')
     AND [other conditions]
 ),
 previous_period AS (
     SELECT SUM(sales_euro) as previous_sales, SUM(sales_units) as previous_units
     FROM pharma_sales
-    WHERE (brands_new = 'BrandName' OR brand LIKE '%BrandName%')
+    WHERE (brands_new = 'BrandName' OR brand = 'BrandName')
     AND [previous period conditions]
 )
 SELECT ... FROM current_period cp, previous_period pp
