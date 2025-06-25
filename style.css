@@ -54,6 +54,7 @@ header p {
     gap: 10px;
     max-width: 600px; /* Increased width */
     margin: 0 auto 15px;
+    flex-wrap: wrap; /* Allow wrapping on smaller screens */
 }
 
 .input-container input {
@@ -85,10 +86,28 @@ header p {
     transition: transform 0.2s;
 }
 
+.reset-container {
+    text-align: center;
+    padding: 10px 30px 20px;
+    background: #f8f9fa;
+}
+
 .reset-btn {
     background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%) !important;
-    padding: 15px 20px !important;
+    padding: 12px 25px !important;
     font-size: 14px !important;
+    white-space: nowrap;
+    min-width: 140px;
+    border: none;
+    border-radius: 25px;
+    color: white;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+
+.reset-btn:hover {
+    transform: translateY(-2px);
 }
 
 .input-container button:hover,
@@ -272,6 +291,14 @@ table th {
     .input-container {
         flex-direction: column;
         max-width: 100%;
+    }
+    
+    .input-container input {
+        margin-bottom: 10px;
+    }
+    
+    .input-container button {
+        margin: 5px 0;
     }
     
     .api-setup,
