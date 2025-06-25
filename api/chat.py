@@ -65,28 +65,6 @@ class ChatGPTQueryProcessor:
         self.data_manager = data_manager
         self.schema_info = data_manager.get_schema_info()
 
-    def detect_language(self, question):
-        """Enhanced language detection"""
-        question_lower = question.lower()
-        
-        # English indicators
-        english_words = ['what', 'are', 'the', 'how', 'show', 'sales', 'market', 'share', 'trends', 'analysis', 'growth', 'top', 'brands']
-        # Spanish indicators  
-        spanish_words = ['cuáles', 'son', 'las', 'ventas', 'qué', 'cómo', 'mercado', 'análisis', 'cuál', 'es', 'el']
-        # French indicators
-        french_words = ['quelles', 'sont', 'les', 'ventes', 'quel', 'est', 'marché', 'analyse', 'comment', 'quels']
-        
-        english_count = sum(1 for word in english_words if word in question_lower)
-        spanish_count = sum(1 for word in spanish_words if word in question_lower)
-        french_count = sum(1 for word in french_words if word in question_lower)
-        
-        if spanish_count > english_count and spanish_count > french_count:
-            return 'spanish'
-        elif french_count > english_count and french_count > spanish_count:
-            return 'french'
-        else:
-            return 'english'  # Default to English
-
     def create_system_prompt(self):
         return """
 You are a specialized SQL query generator for pharmaceutical sales data analysis with TREND ANALYSIS capabilities.
@@ -123,27 +101,11 @@ KEY BUSINESS RULES:
 CRITICAL TREND ANALYSIS REQUIREMENTS:
 7. DEFAULT PERIOD: If no period specified, use MAT (Moving Annual Total) - last 12 months
 8. SALES METRICS: Always provide BOTH sales_euro AND sales_units unless specifically asked for one
-9. For YEARLY data: Include year-over-year growth comparison
-10. For MONTHLY data: Include month-over-month AND year-over-year comparison
-11. For PERIOD data: Compare same periods (e.g., Jan-May 2025 vs Jan-May 2024)
-12. Keep analysis simple and factual - avoid complex interpretations
-
-MANDATORY QUERY PATTERNS:
-
-FOR DEFAULT QUERIES (no period specified):
-- Use MAT (Moving Annual Total) - last 12 months from current data
-- Example: If data goes to June 2025, use July 2024 - June 2025
-- Always show both sales_euro and sales_units
-- Compare to previous 12-month period for growth
-
-FOR MONTHLY ANALYSIS:
-- Current month vs previous month (sequential)
-- Current month vs same month previous year
-- Show both month-over-month and year-over-year trends
-
-FOR PERIOD ANALYSIS (e.g., Q1, Jan-Mar, etc.):
-- Current period vs same period previous year
-- Calculate percentage growth
+9. MANDATORY: Always include previous year comparison for vs PY,% calculation
+10. For YEARLY data: Include year-over-year growth comparison
+11. For MONTHLY data: Include month-over-month AND year-over-year comparison
+12. For PERIOD data: Compare same periods (e.g., Jan-May 2025 vs Jan-May 2024)
+13. Keep analysis simple and factual - avoid complex interpretations
 
 DEFAULT MAT QUERY STRUCTURE (when no period specified):
 ```sql
@@ -166,6 +128,15 @@ SELECT
     ROUND(((cp.current_units - pp.previous_units) / pp.previous_units * 100), 2) as units_growth_percent
 FROM current_mat cp, previous_mat pp
 ```
+
+FOR MONTHLY ANALYSIS:
+- Current month vs previous month (sequential)
+- Current month vs same month previous year
+- Show both month-over-month and year-over-year trends
+
+FOR PERIOD ANALYSIS (e.g., Q1, Jan-Mar, etc.):
+- Current period vs same period previous year
+- Calculate percentage growth
 
 SPECIFIC EXAMPLES:
 
@@ -246,9 +217,6 @@ Return ONLY the SQL query with trend analysis, no explanations or markdown forma
         Multi-language support with factual analysis
         """
         try:
-            # Detect the language of the user's question
-            detected_language = self.detect_language(user_question)
-            
             if query_results is not None and not query_results.empty:
                 results_text = query_results.to_string(index=False, max_rows=20)
                 results_summary = f"Query returned {len(query_results)} rows"
@@ -297,45 +265,6 @@ Return ONLY the SQL query with trend analysis, no explanations or markdown forma
             else:
                 response_type = "GENERIC"
 
-            # Language-specific response prompts
-            language_prompts = {
-                'english': {
-                    'analysis_header': f"📊 {brand_mentioned or 'DATA'} ANALYSIS{' - ' + country_mentioned.upper() if country_mentioned else ''}",
-                    'separator': "═══════════════════════════════════════",
-                    'current_performance': "Current Performance:",
-                    'growth_comparison': "Growth Comparison:",
-                    'key_insights': "🔍 KEY INSIGHTS:",
-                    'data_observations': "• Data Observations: The data shows",
-                    'comparative_analysis': "• Comparative Analysis: Mathematical comparison reveals",
-                    'quantitative_trends': "• Quantitative Trends: Numerical analysis indicates",
-                    'measurable_changes': "• Measurable Changes: Specific changes include"
-                },
-                'spanish': {
-                    'analysis_header': f"📊 ANÁLISIS DE {brand_mentioned or 'DATOS'}{' - ' + country_mentioned.upper() if country_mentioned else ''}",
-                    'separator': "═══════════════════════════════════════",
-                    'current_performance': "Rendimiento Actual:",
-                    'growth_comparison': "Comparación de Crecimiento:",
-                    'key_insights': "🔍 INSIGHTS CLAVE:",
-                    'data_observations': "• Observaciones de Datos: Los datos muestran",
-                    'comparative_analysis': "• Análisis Comparativo: La comparación matemática revela",
-                    'quantitative_trends': "• Tendencias Cuantitativas: El análisis numérico indica",
-                    'measurable_changes': "• Cambios Medibles: Los cambios específicos incluyen"
-                },
-                'french': {
-                    'analysis_header': f"📊 ANALYSE DE {brand_mentioned or 'DONNÉES'}{' - ' + country_mentioned.upper() if country_mentioned else ''}",
-                    'separator': "═══════════════════════════════════════",
-                    'current_performance': "Performance Actuelle:",
-                    'growth_comparison': "Comparaison de Croissance:",
-                    'key_insights': "🔍 INSIGHTS CLÉS:",
-                    'data_observations': "• Observations des Données: Les données montrent",
-                    'comparative_analysis': "• Analyse Comparative: La comparaison mathématique révèle",
-                    'quantitative_trends': "• Tendances Quantitatives: L'analyse numérique indique",
-                    'measurable_changes': "• Changements Mesurables: Les changements spécifiques incluent"
-                }
-            }
-
-            lang_prompt = language_prompts.get(detected_language, language_prompts['english'])
-
             response_prompt = f"""
 You are a pharmaceutical data analyst providing SIMPLE, FACTUAL analysis based only on database results.
 
@@ -346,37 +275,51 @@ CRITICAL REQUIREMENTS:
 1. Respond in the same language as the user's question
 2. Keep responses SIMPLE and FACTUAL - just state the numbers
 3. Always provide BOTH sales in euros AND units when available
-4. DO NOT calculate or mention growth vs previous period unless specifically requested
-5. If user asks for "table" or "show table", provide data in table format
-6. Use clear, simple language
+4. ALWAYS include comparison vs same period previous year (vs PY,%)
+5. Calculate vs PY,% as: ((current sales - previous year sales) / previous year sales) * 100
+6. ALWAYS specify the exact period for which data is extracted
+7. Place "vs PY,%" immediately after each absolute value
+8. If user asks for "table" or "show table", provide data in table format
+9. Use clear, simple language
 
 SIMPLE RESPONSE FORMAT:
 
-First, provide a descriptive introduction based on the query, then show the sales results.
+First, provide a descriptive introduction with the EXACT PERIOD, then show the sales results.
 
 INTRODUCTION TEMPLATE:
-"The sales of [product/brand] in [country/market] for [period] show the following results:"
+"The sales of [product/brand] in [country/market] for [EXACT PERIOD] show the following results:"
 
 Then follow with:
 **Sales Results:**
-- Sales (Euros): [exact amount from data]
-- Sales (Units): [exact amount from data]
+- Sales (Euros): [exact amount from data] (vs PY,% [percentage change])
+- Sales (Units): [exact amount from data] (vs PY,% [percentage change])
 
 EXAMPLE OUTPUT:
-"The sales of product 'Sb' in Ukraine for 2025 show the following results:"
+"The sales of product 'Sb' in Ukraine for January-June 2025 show the following results:"
 
 **Sales Results:**
-- Sales (Euros): 2,761,788
-- Sales (Units): 301,955
+- Sales (Euros): 2,761,788 (vs PY,% -64.6%)
+- Sales (Units): 301,955 (vs PY,% -66.3%)
+
+PERIOD SPECIFICATION EXAMPLES:
+- "for 2025" (full year)
+- "for January-March 2025" (quarterly)
+- "for June 2025" (monthly)
+- "for MAT ending June 2025" (moving annual total)
+- "for Q1 2025" (quarterly)
+- "for H1 2025" (half year)
 
 KEY ELEMENTS:
-1. Always mention: product name in quotes, country/market, and time period
+1. Always mention: product name in quotes, country/market, and EXACT time period
 2. Natural transition: Use "show the following results" to bridge to the data
-3. Respond in the same language as the user's question automatically
+3. MANDATORY: Always include vs PY,% comparison immediately after each value
+4. Format percentage with one decimal place and + or - sign
+5. Be specific about the period (avoid vague terms like "current period")
+6. Respond in the same language as the user's question automatically
 
-If user requests table format, present data as a simple table.
+If user requests table format, present data as a simple table with vs PY,% column.
 
-Keep it simple, factual, and direct. No growth calculations unless requested.
+ALWAYS include previous year comparison and specify exact period. No exceptions.
 
 Provide only factual numbers in the same language as the user's question.
 """
@@ -539,6 +482,8 @@ class handler(BaseHTTPRequestHandler):
 ✅ Year-over-year and month-over-month comparisons
 ✅ Market share calculations with CTEs
 ✅ Enhanced language detection and consistency
+✅ Mandatory vs PY,% calculations
+✅ Hidden SQL queries with toggle functionality
 
 ⚡ PERFORMANCE:
 • Response time: ~1-2 seconds (vs 5-10s for GPT-4)
@@ -554,4 +499,10 @@ class handler(BaseHTTPRequestHandler):
 • English, Spanish, French, German, Portuguese, Italian
 • Enhanced automatic language detection and matching
 • Consistent single-language responses (no mixing)
+
+📊 OUTPUT FEATURES:
+• Always includes vs PY,% comparison
+• Hidden SQL queries with show/hide toggle
+• Clean, professional response format
+• Exact brand matching (Sb = 'Sb', not LIKE '%Sb%')
 """
