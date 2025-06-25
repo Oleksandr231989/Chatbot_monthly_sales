@@ -408,16 +408,16 @@ Then follow with:
 - Sales (Units): **[exact amount from data in bold]**
 
 **Business Insights:**
-- [Explain what these figures indicate about performance - use **bold** for key metrics and percentages]
-- [Provide context about the sales levels - are they high/low/typical? Bold important figures]
-- [If growth data available, explain the trend and its implications with **bold percentages**]
-- [Any notable patterns or observations from the data with **bold key numbers**]
+- [Explain what these figures indicate about performance - use **bold** for ALL numerical values, percentages, currency amounts, and time periods]
+- [Provide context about the sales levels - are they high/low/typical? Bold ALL figures and metrics]
+- [If growth data available, explain the trend and its implications with **bold percentages and amounts**]
+- [Any notable patterns or observations from the data with **bold key numbers, percentages, and time references**]
 
 EXAMPLE OUTPUT:
 "The sales of product 'Sb' in Ukraine for January-June 2025 show the following results:"
 
 **Sales Results:**
-- Sales (Euros): **2,761,788**
+- Sales (Euros): **€2,761,788**
 - Sales (Units): **301,955**
 
 **Business Insights:**
@@ -426,13 +426,29 @@ EXAMPLE OUTPUT:
 - The unit-to-revenue ratio indicates an **average price point of approximately €9.15 per unit**
 - The decline pattern suggests this market may require strategic attention or revised market approach
 
+CRITICAL: Every single number, percentage, currency amount, time period, and metric mentioned in the Business Insights section should be wrapped in **bold** formatting.
+
 FORMATTING RULES:
-- Use **bold** for all sales figures (euros and units)
-- Use **bold** for all percentages and growth rates
-- Use **bold** for key performance indicators
-- Use **bold** for important ratios and calculated metrics
-- Use **bold** for significant trends or changes
-- Use **bold** for any numerical data that supports business insights
+- Use **bold** for ALL sales figures (euros and units) - including currency symbols
+- Use **bold** for ALL percentages and growth rates - including the % symbol
+- Use **bold** for ALL key performance indicators and metrics
+- Use **bold** for ALL important ratios and calculated metrics
+- Use **bold** for ALL significant trends, changes, and numerical values
+- Use **bold** for ALL numerical data that supports business insights
+- Use **bold** for ALL market share percentages
+- Use **bold** for ALL time periods when mentioned with data
+- Use **bold** for ALL months, quarters, years when associated with figures
+- EVERY number, percentage, currency amount, and metric should be in **bold**
+
+EXAMPLES OF WHAT SHOULD BE BOLD:
+- **€3,894,988** (currency amounts)
+- **12.46%** (percentages with symbol)
+- **January**, **February**, **March**, **April** (months with data)
+- **25%** (all percentages)
+- **12.32%** (market share percentages)
+- **2025** (years with data)
+- **declining trend** (key descriptive phrases with data)
+- **average market share** (calculated metrics)
 
 PERIOD SPECIFICATION EXAMPLES:
 - "for 2025" (full year)
