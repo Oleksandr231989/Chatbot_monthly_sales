@@ -1,7 +1,12 @@
 {
   "functions": {
     "api/chat.py": {
-      "runtime": "@vercel/python"
+      "runtime": "python3.9"
+    }
+  },
+  "build": {
+    "env": {
+      "PYTHONPATH": "$PYTHONPATH:/var/task"
     }
   }
 }
