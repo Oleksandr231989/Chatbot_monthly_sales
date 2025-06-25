@@ -3,14 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🏥 Pharma Sales Analytics Chatbot</title>
+    <title>Market Sales Chatbot</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div class="container">
         <header>
-            <h1>🏥 Pharma Sales Analytics Chatbot</h1>
-            <p>🌍 Ask questions about your pharmaceutical data in any language</p>
+            <h1>📊 Market Sales Chatbot</h1>
+            <p>🌍 Ask questions about your market sales data in any language</p>
+            <div class="stats" id="stats" style="display: none;">
+                <span id="dbStats">Connecting to database...</span>
+            </div>
         </header>
 
         <!-- API Key Setup -->
@@ -27,25 +30,46 @@
         <div class="chat-section" id="chatSection" style="display: none;">
             <div class="sample-questions">
                 <h3>💡 Sample Questions:</h3>
-                <button class="sample-btn" onclick="askQuestion('What are Sb sales in Mexico in 2024?')">
-                    Sb sales in Mexico 2024
-                </button>
-                <button class="sample-btn" onclick="askQuestion('Show me top 5 brands by sales')">
-                    Top 5 brands by sales
-                </button>
+                <div class="question-grid">
+                    <button class="sample-btn" onclick="askQuestion('What are the Sb sales in 2025?')">
+                        🇺🇸 What are the Sb sales in 2025?
+                    </button>
+                    <button class="sample-btn" onclick="askQuestion('What is the market share of Sb in USA?')">
+                        📊 What is the market share of Sb in USA?
+                    </button>
+                    <button class="sample-btn" onclick="askQuestion('Probiotic market sales in France in 2025?')">
+                        🇫🇷 Probiotic market sales in France in 2025?
+                    </button>
+                    <button class="sample-btn" onclick="askQuestion('¿Cuáles son las ventas de Sb en México en 2024?')">
+                        🇪🇸 ¿Cuáles son las ventas de Sb en México en 2024?
+                    </button>
+                    <button class="sample-btn" onclick="askQuestion('Quelles sont les ventes de Sb au Mexique en 2024?')">
+                        🇫🇷 Quelles sont les ventes de Sb au Mexique en 2024?
+                    </button>
+                    <button class="sample-btn" onclick="askQuestion('Show me top 5 brands by sales with growth trends')">
+                        📈 Top 5 brands with growth trends
+                    </button>
+                </div>
             </div>
 
             <div class="chat-container">
                 <div class="chat-messages" id="chatMessages">
                     <div class="message bot-message">
                         <div class="message-content">
-                            <p><strong>🤖 Ready!</strong> I can analyze your pharmaceutical sales data.</p>
+                            <p><strong>🤖 Ready!</strong> I can analyze your market sales data.</p>
+                            <p>Ask questions about sales, market share, and trends in any language!</p>
+                            <ul>
+                                <li><strong>Sales Analysis:</strong> "What are the Sb sales in 2025?"</li>
+                                <li><strong>Market Share:</strong> "What is the market share of Sb in USA?"</li>
+                                <li><strong>Market Trends:</strong> "Probiotic market sales in France?"</li>
+                                <li><strong>Multi-language:</strong> "¿Cuáles son las ventas de Sb?"</li>
+                            </ul>
                         </div>
                     </div>
                 </div>
                 
                 <div class="input-container">
-                    <input type="text" id="messageInput" placeholder="Ask about your sales data..." />
+                    <input type="text" id="messageInput" placeholder="Ask about your sales data in any language... 🌍" />
                     <button id="sendButton">Send</button>
                 </div>
             </div>
