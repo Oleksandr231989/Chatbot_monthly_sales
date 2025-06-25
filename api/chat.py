@@ -395,6 +395,7 @@ class handler(BaseHTTPRequestHandler):
             if not api_key or not api_key.startswith('sk-'):
                 self.send_response_json({
                     'error': "Valid OpenAI API key required",
+                    'sql_query': None,
                     'data': []
                 }, 400)
                 return
@@ -412,11 +413,13 @@ class handler(BaseHTTPRequestHandler):
                 if test_error:
                     self.send_response_json({
                         'error': f"Database error: {test_error}",
+                        'sql_query': None,
                         'data': []
                     })
                 else:
                     self.send_response_json({
                         'response': f"✅ Connected! Database has {test_df.iloc[0]['total']:,} records. Using GPT-4o Mini for fast, cost-effective analysis.",
+                        'sql_query': "SELECT COUNT(*) as total FROM pharma_sales",
                         'data': test_df.to_dict('records'),
                         'total_rows': len(test_df)
                     })
@@ -427,6 +430,7 @@ class handler(BaseHTTPRequestHandler):
             if sql_error:
                 self.send_response_json({
                     'error': sql_error,
+                    'sql_query': None,
                     'data': []
                 })
                 return
@@ -436,6 +440,7 @@ class handler(BaseHTTPRequestHandler):
             if db_error:
                 self.send_response_json({
                     'error': f"Database error: {db_error}",
+                    'sql_query': sql_query,
                     'data': []
                 })
                 return
@@ -454,6 +459,7 @@ class handler(BaseHTTPRequestHandler):
             
             self.send_response_json({
                 'response': response,
+                'sql_query': sql_query,
                 'data': data_for_response,
                 'total_rows': len(results_df) if results_df is not None else 0
             })
@@ -465,6 +471,7 @@ class handler(BaseHTTPRequestHandler):
         except Exception as e:
             self.send_response_json({
                 'error': f"Server error: {str(e)}",
+                'sql_query': None,
                 'data': []
             }, 500)
     
