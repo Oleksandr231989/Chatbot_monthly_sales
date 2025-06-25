@@ -72,7 +72,8 @@ header p {
 
 .input-container button,
 #connectButton,
-#sendButton {
+#sendButton,
+#resetButton {
     padding: 15px 30px;
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
@@ -84,15 +85,23 @@ header p {
     transition: transform 0.2s;
 }
 
+.reset-btn {
+    background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%) !important;
+    padding: 15px 20px !important;
+    font-size: 14px !important;
+}
+
 .input-container button:hover,
 #connectButton:hover,
-#sendButton:hover {
+#sendButton:hover,
+#resetButton:hover {
     transform: translateY(-2px);
 }
 
 .input-container button:disabled,
 #connectButton:disabled,
-#sendButton:disabled {
+#sendButton:disabled,
+#resetButton:disabled {
     opacity: 0.6;
     cursor: not-allowed;
     transform: none;
