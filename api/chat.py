@@ -283,14 +283,18 @@ SELECT
 FROM brand_data bd, total_market tm
 ```
 
-CRITICAL MARKET SHARE RULES:
-- ALWAYS use parentheses around OR conditions: WHERE (brands_new = 'Brand' OR brand = 'Brand') AND country = 'Country'
-- ALWAYS identify the competitive_market for the requested brand first
-- ALWAYS filter total sales by the SAME competitive_market AND same filters (country, period)
-- Market share = Brand Sales / Total Competitive Market Sales (NOT total database sales)
-- Market share should NEVER exceed 100% - if it does, check the competitive_market filtering
-- Use LIMIT 1 when selecting competitive_market to avoid multiple values
-- ALWAYS include the competitive_market in output to verify correct market identification
+CRITICAL: When user asks for "same data in units/volume":
+- DO NOT create a new query with different time periods
+- DO NOT change the filters or WHERE conditions
+- ONLY replace sales_euro with sales_units in the SELECT and calculation parts
+- Keep the same year range, country, brand, and all other conditions identical
+- Example: If previous query was "by years" for 2022-2025, keep the same year range
+
+CRITICAL: When user asks for "same data in euros/value":
+- DO NOT create a new query with different time periods  
+- DO NOT change the filters or WHERE conditions
+- ONLY replace sales_units with sales_euro in the SELECT and calculation parts
+- Keep the same year range, country, brand, and all other conditions identical
 
 Return ONLY the SQL query with trend analysis, no explanations or markdown formatting.
 """
