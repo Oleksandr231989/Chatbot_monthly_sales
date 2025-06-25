@@ -7,6 +7,7 @@ const connectButton = document.getElementById('connectButton');
 const chatMessages = document.getElementById('chatMessages');
 const messageInput = document.getElementById('messageInput');
 const sendButton = document.getElementById('sendButton');
+const resetButton = document.getElementById('resetButton');
 const loading = document.getElementById('loading');
 
 // API endpoint
@@ -14,6 +15,7 @@ const API_URL = '/api/chat';
 
 connectButton.addEventListener('click', connectWithApiKey);
 sendButton.addEventListener('click', sendMessage);
+resetButton.addEventListener('click', resetChat);
 messageInput.addEventListener('keypress', (e) => {
     if (e.key === 'Enter') {
         sendMessage();
@@ -78,6 +80,20 @@ async function testConnection() {
 function askQuestion(question) {
     messageInput.value = question;
     sendMessage();
+}
+
+function resetChat() {
+    // Clear all messages
+    chatMessages.innerHTML = '';
+    
+    // Clear input field
+    messageInput.value = '';
+    
+    // Add welcome message back
+    addMessage('✅ Chat reset! You can now ask new questions about your pharmaceutical data.', 'bot');
+    
+    // Focus on input
+    messageInput.focus();
 }
 
 async function sendMessage() {
@@ -154,12 +170,55 @@ function addBotResponse(data) {
     responseText.innerHTML = data.response.replace(/\n/g, '<br>');
     responseDiv.appendChild(responseText);
     
-    // SQL query (if available)
+    // SQL query (hidden by default with show button)
     if (data.sql_query) {
+        const sqlContainer = document.createElement('div');
+        sqlContainer.style.margin = '15px 0';
+        
+        // Show SQL button
+        const showSqlBtn = document.createElement('button');
+        showSqlBtn.textContent = '📝 Show SQL Query';
+        showSqlBtn.className = 'show-sql-btn';
+        showSqlBtn.style.cssText = `
+            background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
+            color: white;
+            border: none;
+            border-radius: 20px;
+            padding: 8px 16px;
+            font-size: 12px;
+            cursor: pointer;
+            margin-bottom: 10px;
+            transition: transform 0.2s;
+        `;
+        
+        // Hidden SQL query div
         const sqlDiv = document.createElement('div');
         sqlDiv.className = 'sql-query';
+        sqlDiv.style.display = 'none';
         sqlDiv.innerHTML = `<strong>💻 SQL Query:</strong><br><code>${data.sql_query}</code>`;
-        responseDiv.appendChild(sqlDiv);
+        
+        // Toggle functionality
+        showSqlBtn.addEventListener('click', function() {
+            if (sqlDiv.style.display === 'none') {
+                sqlDiv.style.display = 'block';
+                showSqlBtn.textContent = '📝 Hide SQL Query';
+            } else {
+                sqlDiv.style.display = 'none';
+                showSqlBtn.textContent = '📝 Show SQL Query';
+            }
+        });
+        
+        showSqlBtn.addEventListener('mouseenter', function() {
+            this.style.transform = 'translateY(-2px)';
+        });
+        
+        showSqlBtn.addEventListener('mouseleave', function() {
+            this.style.transform = 'translateY(0)';
+        });
+        
+        sqlContainer.appendChild(showSqlBtn);
+        sqlContainer.appendChild(sqlDiv);
+        responseDiv.appendChild(sqlContainer);
     }
     
     // Data preview (if available)
